@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Hava Sahası | Saha Terminali{% endblock %}</title>
+    <link rel="stylesheet" href="/ui/static/css/tactical.css?v={{ asset_version | default('1') }}">
+    <link rel="shortcut icon" href="#">
+    {% block head_extra %}{% endblock %}
+</head>
+<body
+    data-csrf-token="{{ csrf_token | default('') }}"
+    data-csrf-cookie-name="{{ csrf_cookie_name | default('fd_csrf_token') }}"
+>
+    {% block content %}{% endblock %}
+    <script src="/ui/static/js/ui_csrf.js?v={{ asset_version | default('1') }}" defer></script>
+    {% block body_end %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,8 @@
+{
+  "common": {
+    "errors": {
+      "csrf_validation_failed": "CSRF doğrulaması başarısız.",
+      "permission_denied": "Bu işlem için yetkiniz yok."
+    }
+  }
+}

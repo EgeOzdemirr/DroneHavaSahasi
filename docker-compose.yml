@@ -1,0 +1,118 @@
+services:
+  api:
+    build:
+      context: .
+    container_name: friend-drone-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      APP_NAME: "${APP_NAME:-Friend Drone MVP}"
+      ENVIRONMENT: "${ENVIRONMENT:-dev}"
+      DATABASE_URL: "${DATABASE_URL:-postgresql+psycopg2://postgres:postgres@postgres:5432/friend_drone}"
+      REDIS_URL: "${REDIS_URL:-redis://redis:6379/0}"
+      JWT_SECRET_KEY: "${JWT_SECRET_KEY:?Set JWT_SECRET_KEY in .env}"
+      JWT_ALGORITHM: "${JWT_ALGORITHM:-HS256}"
+      JWT_EXPIRE_MINUTES: "${JWT_EXPIRE_MINUTES:-120}"
+      ACCESS_COOKIE_NAME: "${ACCESS_COOKIE_NAME:-fd_access_token}"
+      CSRF_COOKIE_NAME: "${CSRF_COOKIE_NAME:-fd_csrf_token}"
+      SECURE_COOKIES: "${SECURE_COOKIES:-false}"
+      SESSION_MAX_AGE_SECONDS: "${SESSION_MAX_AGE_SECONDS:-7200}"
+      MASTER_KEY: "${MASTER_KEY:?Set MASTER_KEY in .env}"
+      BOOTSTRAP_ADMIN_USERNAME: "${BOOTSTRAP_ADMIN_USERNAME:-admin}"
+      BOOTSTRAP_ADMIN_PASSWORD: "${BOOTSTRAP_ADMIN_PASSWORD:?Set BOOTSTRAP_ADMIN_PASSWORD in .env}"
+      TELEMETRY_ALLOWED_SKEW_SECONDS: "${TELEMETRY_ALLOWED_SKEW_SECONDS:-30}"
+      NONCE_TTL_SECONDS: "${NONCE_TTL_SECONDS:-120}"
+      RETENTION_DAYS: "${RETENTION_DAYS:-30}"
+      LINK_LOST_SECONDS: "${LINK_LOST_SECONDS:-10}"
+      DEMO_MODE_ENABLED: "${DEMO_MODE_ENABLED:-true}"
+      DEMO_INTERCEPTOR_SPEED_MPS: "${DEMO_INTERCEPTOR_SPEED_MPS:-95}"
+      DEMO_INTERCEPTOR_MIN_DURATION_SECONDS: "${DEMO_INTERCEPTOR_MIN_DURATION_SECONDS:-25}"
+      MAP_PROVIDER: "${MAP_PROVIDER:-openfreemap}"
+      MAP_LABEL_LANGUAGE: "${MAP_LABEL_LANGUAGE:-tr}"
+      MAP_STYLE_URL: "${MAP_STYLE_URL:-https://tiles.openfreemap.org/styles/liberty}"
+      MAP_HOME_LAT: "${MAP_HOME_LAT:-39.0}"
+      MAP_HOME_LON: "${MAP_HOME_LON:-35.2}"
+      MAP_HOME_ZOOM: "${MAP_HOME_ZOOM:-5.4}"
+      MAP_MIN_ZOOM: "${MAP_MIN_ZOOM:-2}"
+      MAP_MAX_ZOOM: "${MAP_MAX_ZOOM:-19}"
+      MAPLIBRE_CSS_URL: "${MAPLIBRE_CSS_URL:-https://unpkg.com/maplibre-gl/dist/maplibre-gl.css}"
+      MAPLIBRE_JS_URL: "${MAPLIBRE_JS_URL:-https://unpkg.com/maplibre-gl/dist/maplibre-gl.js}"
+      MAPLIBRE_LEAFLET_JS_URL: "${MAPLIBRE_LEAFLET_JS_URL:-https://unpkg.com/@maplibre/maplibre-gl-leaflet/leaflet-maplibre-gl.js}"
+      OPENSKY_ENABLED: "${OPENSKY_ENABLED:-true}"
+      OPENSKY_BBOX: "${OPENSKY_BBOX:-34.0,18.0,45.5,45.5}"
+      OPENSKY_BASE_URL: "${OPENSKY_BASE_URL:-https://opensky-network.org/api}"
+      OPENSKY_CACHE_TTL_SECONDS: "${OPENSKY_CACHE_TTL_SECONDS:-30}"
+      OPENSKY_TIMEOUT_SECONDS: "${OPENSKY_TIMEOUT_SECONDS:-6}"
+      OPENSKY_CLIENT_ID: "${OPENSKY_CLIENT_ID:-}"
+      OPENSKY_CLIENT_SECRET: "${OPENSKY_CLIENT_SECRET:-}"
+      CORS_ORIGINS: "${CORS_ORIGINS:-[\"*\"]}"
+    ports:
+      - "8000:8000"
+    command: >
+      sh -c "until nc -z postgres 5432; do echo 'waiting for postgres'; sleep 1; done;
+             alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    volumes:
+      - ./:/app
+
+  bridge:
+    build:
+      context: .
+    container_name: friend-drone-bridge
+    depends_on:
+      api:
+        condition: service_started
+      redis:
+        condition: service_started
+    environment:
+      ENVIRONMENT: "${ENVIRONMENT:-dev}"
+      REDIS_URL: "${REDIS_URL:-redis://redis:6379/0}"
+      BRIDGE_PORT: "${BRIDGE_PORT:-8100}"
+      BRIDGE_SOURCE_TOKEN: "${BRIDGE_SOURCE_TOKEN:?Set BRIDGE_SOURCE_TOKEN in .env}"
+      BRIDGE_API_INGEST_URL: "${BRIDGE_API_INGEST_URL:-http://api:8000/v1/telemetry/ingest}"
+      BRIDGE_FORWARD_TIMEOUT_SECONDS: "${BRIDGE_FORWARD_TIMEOUT_SECONDS:-2}"
+      BRIDGE_RETRY_MAX_ATTEMPTS: "${BRIDGE_RETRY_MAX_ATTEMPTS:-5}"
+      BRIDGE_RETRY_BACKOFF_SECONDS: "${BRIDGE_RETRY_BACKOFF_SECONDS:-1}"
+      BRIDGE_QUEUE_KEY: "${BRIDGE_QUEUE_KEY:-bridge:telemetry:retry}"
+      BRIDGE_DLQ_KEY: "${BRIDGE_DLQ_KEY:-bridge:telemetry:dlq}"
+      BRIDGE_QUEUE_MAX: "${BRIDGE_QUEUE_MAX:-10000}"
+    ports:
+      - "8100:8100"
+    command: >
+      sh -c "uvicorn bridge.main:app --host 0.0.0.0 --port 8100 --reload"
+    volumes:
+      - ./:/app
+
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: friend-drone-postgres
+    environment:
+      POSTGRES_USER: "${POSTGRES_USER:-postgres}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-postgres}"
+      POSTGRES_DB: "${POSTGRES_DB:-friend_drone}"
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-friend_drone}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+
+  redis:
+    image: redis:7-alpine
+    container_name: friend-drone-redis
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+
+volumes:
+  pg_data:
+  redis_data:

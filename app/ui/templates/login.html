@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Giriş | Taktik Konsolu{% endblock %}
+{% block content %}
+<main class="login-shell terminal-login-shell">
+    <section class="login-panel terminal-login-panel">
+        <div class="login-brand">
+            <p class="eyebrow">Saha Terminali / Yetkili Erişim</p>
+            <h1>TAKTİK ERİŞİM</h1>
+            <p class="subtitle">Hava Sahası Kontrol Merkezi komuta katmanına giriş</p>
+        </div>
+
+        <div class="login-divider"></div>
+
+        {% if error %}
+        <div class="error-box">{{ error }}</div>
+        {% endif %}
+
+        <form method="post" action="/ui/login" class="login-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+            <label for="username">Kullanıcı Adı</label>
+            <input id="username" name="username" autocomplete="username" required>
+
+            <label for="password">Parola</label>
+            <input id="password" name="password" type="password" autocomplete="current-password" required>
+
+            <button type="submit">Konsola Giriş Yap</button>
+        </form>
+
+        <div class="login-footnote">
+            <span>Offline harita destekli saha terminali</span>
+            <span>CSRF korumali oturum acilisi</span>
+        </div>
+    </section>
+</main>
+{% endblock %}

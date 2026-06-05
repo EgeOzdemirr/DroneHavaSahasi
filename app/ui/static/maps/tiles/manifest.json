@@ -1,0 +1,98 @@
+{
+  "source": "OpenStreetMap Standard",
+  "attribution": "(c) OpenStreetMap contributors",
+  "layers": [
+    {
+      "id": "world",
+      "label": "Dunya",
+      "bbox": {
+        "min_lat": -85.0,
+        "min_lon": -180.0,
+        "max_lat": 85.0,
+        "max_lon": 180.0
+      },
+      "zooms": [
+        2,
+        3,
+        4,
+        5
+      ],
+      "home_center": [
+        25.0,
+        15.0
+      ],
+      "home_zoom": 3,
+      "tile_count": 1360
+    },
+    {
+      "id": "turkiye",
+      "label": "Turkiye",
+      "bbox": {
+        "min_lat": 35.8,
+        "min_lon": 25.6,
+        "max_lat": 42.2,
+        "max_lon": 44.9
+      },
+      "zooms": [
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "home_center": [
+        39.0,
+        35.2
+      ],
+      "home_zoom": 7,
+      "tile_count": 1850
+    },
+    {
+      "id": "istanbul",
+      "label": "Istanbul",
+      "bbox": {
+        "min_lat": 40.8,
+        "min_lon": 28.45,
+        "max_lat": 41.4,
+        "max_lon": 29.8
+      },
+      "zooms": [
+        9,
+        10,
+        11,
+        12,
+        13
+      ],
+      "home_center": [
+        41.05,
+        29.05
+      ],
+      "home_zoom": 10,
+      "tile_count": 853
+    },
+    {
+      "id": "tuzla",
+      "label": "Istanbul/Tuzla",
+      "bbox": {
+        "min_lat": 40.78,
+        "min_lon": 29.2,
+        "max_lat": 40.95,
+        "max_lon": 29.5
+      },
+      "zooms": [
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "home_center": [
+        40.83,
+        29.31
+      ],
+      "home_zoom": 13,
+      "tile_count": 3242
+    }
+  ]
+}

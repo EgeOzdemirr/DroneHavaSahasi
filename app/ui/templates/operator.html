@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}Operatör Paneli | Hava Sahası{% endblock %}
+{% block head_extra %}
+<link rel="stylesheet" href="/ui/static/vendor/leaflet/leaflet.css?v={{ asset_version | default('1') }}">
+{% if map_config.use_vector_basemap %}
+<link rel="stylesheet" href="{{ map_config.maplibre_css_url }}">
+{% endif %}
+{% endblock %}
+{% block content %}
+<main class="command-shell terminal-shell" data-page="operator" data-admin-preview="{{ 'true' if is_admin_preview else 'false' }}">
+    <header class="topbar">
+        <div class="topbar-left">
+            <p class="eyebrow">Saha Terminali / Hedef Atama ve Angajman Takibi</p>
+            <h1>OPERATÖR PANELİ</h1>
+            <p class="terminal-subline">
+                <span>{{ username }}</span>
+                <span>{{ role_label }}</span>
+                <span>Aktif önleme konsolu</span>
+            </p>
+        </div>
+        <div class="topbar-right">
+            {% if role == "admin" %}
+            <a class="ghost-btn nav-btn" href="/ui/control-center">Kontrol Merkezi</a>
+            {% endif %}
+            <form method="post" action="/ui/logout" class="inline-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <button type="submit" class="ghost-btn">Çıkış</button>
+            </form>
+        </div>
+    </header>
+
+    <section class="status-ribbon status-ribbon-operator">
+        <div class="metric-card" data-tone="warning">
+            <span>Bekleyen Görev</span>
+            <strong id="operator-pending-count">0</strong>
+            <small>Atama bekliyor</small>
+        </div>
+        <div class="metric-card" data-tone="task">
+            <span>Kabul Edilen</span>
+            <strong id="operator-accepted-count">0</strong>
+            <small>Aktif angajman</small>
+        </div>
+        <div class="metric-card" data-tone="track">
+            <span>Tamamlanan</span>
+            <strong id="operator-completed-count">0</strong>
+            <small>Kapanmış görevler</small>
+        </div>
+    </section>
+
+    <section class="command-stage operator-stage">
+        <article class="panel panel-span-2 map-panel command-map-panel operator-map-panel">
+            <div class="panel-head">
+                <div>
+                    <p class="panel-kicker">Aktif angajman</p>
+                    <h3>Canlı Görev Haritası</h3>
+                    <small>Operatör istasyonu, keşif izi, önleyici hareketi ve hedef aynı sahnede izlenir</small>
+                </div>
+                <div class="panel-head-actions map-head-actions">
+                    <div class="map-head-meta">
+                        <span class="map-chip recon-chip">Keşif</span>
+                        <span class="map-chip interceptor-chip">Önleyici</span>
+                        <span class="map-chip hostile-chip">Düşman Hedef</span>
+                        <span class="map-chip station-chip">Operatör İstasyonu</span>
+                    </div>
+                    <button type="button" class="ghost-btn" id="refresh-operator-panel">Veriyi Tazele</button>
+                </div>
+            </div>
+            <div class="map-frame">
+                <div id="operator-map-canvas" class="situation-map" role="img" aria-label="Operatör görev haritası" data-map-config='{{ map_config | tojson | forceescape }}'></div>
+                <div class="map-hud">
+                    <p id="operator-map-summary">Seçili görev için harita hazır değil.</p>
+                    <small id="operator-map-focus">Önleyici telemetrisi geldikçe hedefe yaklaşma burada canlı izlenir.</small>
+                </div>
+            </div>
+        </article>
+
+        <section class="operator-console panel-span-2">
+            <article class="panel queue-panel">
+                <div class="panel-head">
+                    <div>
+                        <p class="panel-kicker">Operatör kuyruğu</p>
+                        <h3>Benim Görevlerim</h3>
+                        <small>Operatör kullanıcısının kendi görev akışı ve seçim listesi</small>
+                    </div>
+                </div>
+                <div class="stack-list" id="operator-task-list"></div>
+            </article>
+
+            <article class="panel detail-panel command-detail-panel">
+                <div class="panel-head">
+                    <div>
+                        <p class="panel-kicker">Seçili görev bölmesi</p>
+                        <h3>Görev Detayı</h3>
+                        <small>Hedef koordinatı, göreli temas bilgisi ve operatör eylemleri</small>
+                    </div>
+                </div>
+                <div class="detail-panel-body">
+                    <div id="operator-task-detail" class="empty-state">
+                        Bir görev seçildiğinde mutlak hedef koordinatı, yönelim ve menzil bilgileri burada gösterilir.
+                    </div>
+                    <form id="operator-action-form" class="compact-form action-dock" hidden>
+                        <label for="operator-note">Operatör Notu</label>
+                        <textarea id="operator-note" rows="4" placeholder="Opsiyonel not"></textarea>
+                        <div class="action-row action-row-strong">
+                            <button type="button" data-action="accept" class="action-btn action-accept">Kabul Et</button>
+                            <button type="button" data-action="reject" class="action-btn action-reject">Reddet</button>
+                            <button type="button" data-action="complete" class="action-btn action-complete">Tamamlandı</button>
+                        </div>
+                    </form>
+                    <div id="operator-progress-panel" class="progress-panel empty-state">
+                        Aktif görev seçildiğinde kalan mesafe, ETA ve ilerleme burada gösterilir.
+                    </div>
+                    <div class="replay-controls operator-replay-controls" id="operator-replay-panel">
+                        <div class="replay-headline">
+                            <strong id="operator-replay-title">Görev seçilmedi</strong>
+                            <small id="operator-replay-clock">--:--:--</small>
+                        </div>
+                        <input id="operator-replay-slider" class="replay-slider" type="range" min="0" max="1000" value="1000" disabled>
+                        <div class="action-row replay-actions">
+                            <button type="button" class="ghost-btn" id="operator-replay-play" disabled>Oynat</button>
+                            <select id="operator-replay-speed" disabled>
+                                <option value="1">1x</option>
+                                <option value="2" selected>2x</option>
+                                <option value="4">4x</option>
+                            </select>
+                        </div>
+                        <p class="form-note" id="operator-replay-status">Replay için görev seçin.</p>
+                    </div>
+                </div>
+            </article>
+        </section>
+    </section>
+
+    <section id="operator-flash-message" class="flash-line" hidden></section>
+</main>
+{% endblock %}
+{% block body_end %}
+<script src="/ui/static/vendor/leaflet/leaflet.js?v={{ asset_version | default('1') }}" defer></script>
+{% if map_config.use_vector_basemap %}
+<script src="{{ map_config.maplibre_js_url }}" defer></script>
+<script src="{{ map_config.maplibre_leaflet_js_url }}" defer></script>
+{% endif %}
+<script src="/ui/static/js/track_map.js?v={{ asset_version | default('1') }}" defer></script>
+<script src="/ui/static/js/operator.js?v={{ asset_version | default('1') }}" defer></script>
+{% endblock %}

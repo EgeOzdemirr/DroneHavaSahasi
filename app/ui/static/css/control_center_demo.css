@@ -1,0 +1,560 @@
+.control-demo-shell {
+    min-height: 100vh;
+    padding: 0.85rem;
+    background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+        linear-gradient(180deg, #090d0b 0%, #111612 48%, #090d0b 100%);
+    background-size: 48px 48px, 48px 48px, auto;
+}
+
+.control-demo-shell .topbar {
+    margin-bottom: 0.75rem;
+    padding: 0.8rem 0.95rem;
+}
+
+.control-demo-shell .topbar h1 {
+    font-size: clamp(1.65rem, 2vw, 2.5rem);
+}
+
+.control-demo-shell .status-ribbon {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.45rem;
+    margin-bottom: 0.55rem;
+}
+
+.command-shell.terminal-shell.control-demo-shell .metric-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+        "label value"
+        "detail detail";
+    align-items: end;
+    column-gap: 0.8rem;
+    min-height: 78px;
+    border-radius: 16px;
+    padding: 0.68rem 0.78rem;
+}
+
+.command-shell.terminal-shell.control-demo-shell .metric-card::after {
+    left: 0.78rem;
+    right: 0.78rem;
+    height: 2px;
+}
+
+.command-shell.terminal-shell.control-demo-shell .metric-card span {
+    grid-area: label;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    line-height: 1.2;
+}
+
+.command-shell.terminal-shell.control-demo-shell .metric-card strong {
+    grid-area: value;
+    margin-top: 0;
+    font-size: 1.72rem;
+    line-height: 1;
+}
+
+.command-shell.terminal-shell.control-demo-shell .metric-card small {
+    grid-area: detail;
+    margin-top: 0.28rem;
+    overflow: hidden;
+    color: rgba(181, 207, 190, 0.72);
+    font-size: 0.76rem;
+    line-height: 1.25;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.control-demo-workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 410px);
+    gap: 0.8rem;
+    align-items: stretch;
+    min-height: min(720px, calc(100vh - 170px));
+}
+
+.control-demo-shell .panel {
+    border-radius: 14px;
+}
+
+.control-demo-shell .panel-head {
+    margin-bottom: 0.7rem;
+    padding-bottom: 0.65rem;
+}
+
+.control-demo-map {
+    display: grid;
+    grid-template-rows: auto minmax(480px, 1fr);
+    min-width: 0;
+}
+
+.control-demo-map-head {
+    align-items: center;
+}
+
+.control-demo-map-head .panel-head-actions {
+    max-width: min(760px, 58vw);
+}
+
+.control-demo-shell .map-head-meta {
+    max-width: 100%;
+}
+
+.control-demo-map-frame {
+    min-height: 100%;
+    height: 100%;
+    border-radius: 12px;
+}
+
+.control-demo-map-frame .situation-map {
+    height: 100%;
+    min-height: 480px;
+}
+
+.control-demo-shell .map-hud {
+    left: 14px;
+    right: 14px;
+    bottom: 14px;
+    border-radius: 10px;
+}
+
+.control-demo-rail {
+    display: grid;
+    grid-auto-rows: max-content;
+    align-content: start;
+    align-self: start;
+    gap: 0.5rem;
+    max-height: calc(100vh - 150px);
+    min-height: 0;
+    overflow: auto;
+    padding-right: 0.15rem;
+}
+
+.command-shell.terminal-shell.control-demo-shell .control-demo-rail .panel {
+    overflow: hidden;
+    padding: 0;
+    border-radius: 12px;
+}
+
+.control-demo-tool-summary {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    list-style: none;
+    padding: 0.68rem 0.72rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.control-demo-tool-summary::-webkit-details-marker {
+    display: none;
+}
+
+.control-demo-tool-summary::after {
+    content: "+";
+    display: grid;
+    width: 26px;
+    height: 26px;
+    flex: 0 0 26px;
+    place-items: center;
+    border: 1px solid rgba(181, 207, 190, 0.16);
+    border-radius: 999px;
+    color: var(--field-cyan);
+    font-family: var(--mono);
+    font-size: 0.88rem;
+    line-height: 1;
+}
+
+.control-demo-tool[open] > .control-demo-tool-summary {
+    border-bottom: 1px solid rgba(181, 207, 190, 0.12);
+}
+
+.control-demo-tool[open] > .control-demo-tool-summary::after {
+    content: "-";
+}
+
+.control-demo-tool-copy {
+    display: grid;
+    min-width: 0;
+    gap: 0.12rem;
+}
+
+.control-demo-tool-copy .panel-kicker {
+    margin: 0;
+    font-size: 0.6rem;
+    letter-spacing: 0.14em;
+}
+
+.control-demo-tool-copy strong {
+    overflow: hidden;
+    color: #f4f6f1;
+    font-family: var(--field-display);
+    font-size: 0.9rem;
+    letter-spacing: 0.07em;
+    line-height: 1.15;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.control-demo-tool-copy small {
+    overflow: hidden;
+    color: var(--field-muted);
+    font-size: 0.68rem;
+    line-height: 1.25;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.control-demo-tool-body {
+    display: grid;
+    gap: 0.55rem;
+    padding: 0.68rem 0.72rem 0.75rem;
+}
+
+.command-shell.terminal-shell.control-demo-shell .control-demo-rail .progress-panel,
+.command-shell.terminal-shell.control-demo-shell .control-demo-rail .task-timeline,
+.command-shell.terminal-shell.control-demo-shell .control-demo-rail .replay-controls {
+    border-radius: 10px;
+}
+
+.control-demo-rail .field-layer-panel {
+    border-color: rgba(85, 221, 255, 0.28);
+    box-shadow:
+        inset 0 0 0 1px rgba(85, 221, 255, 0.05),
+        0 12px 32px rgba(0, 0, 0, 0.22);
+}
+
+.control-demo-rail .field-layer-panel .control-demo-tool-copy strong {
+    color: #e9ffff;
+}
+
+.command-shell.terminal-shell.control-demo-shell .control-demo-rail .progress-panel,
+.command-shell.terminal-shell.control-demo-shell .control-demo-rail .replay-controls {
+    gap: 0.55rem;
+    padding: 0.65rem;
+}
+
+.command-shell.terminal-shell.control-demo-shell .control-demo-rail .progress-readout strong {
+    font-size: 1.45rem;
+}
+
+.command-shell.terminal-shell.control-demo-shell .control-demo-rail .progress-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.command-shell.terminal-shell.control-demo-shell .control-demo-rail .task-timeline {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.4rem;
+    padding: 0;
+}
+
+.command-shell.terminal-shell.control-demo-shell .control-demo-rail .task-timeline.empty-state {
+    display: block;
+}
+
+.command-shell.terminal-shell.control-demo-shell .control-demo-rail .timeline-step {
+    min-height: 86px;
+    padding: 0.55rem 0.45rem;
+}
+
+.command-shell.terminal-shell.control-demo-shell .control-demo-rail .timeline-step span {
+    width: 24px;
+    height: 24px;
+}
+
+.command-shell.terminal-shell.control-demo-shell .control-demo-rail .timeline-step strong {
+    font-size: 0.72rem;
+}
+
+.command-shell.terminal-shell.control-demo-shell .control-demo-rail .timeline-step small {
+    font-size: 0.66rem;
+}
+
+.control-demo-field-form {
+    gap: 0.48rem;
+}
+
+.control-demo-form-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 76px;
+    gap: 0.55rem;
+    align-items: end;
+}
+
+.control-demo-shell .field-layer-panel input[type="color"] {
+    width: 100%;
+    min-height: 38px;
+}
+
+.control-demo-field-form .action-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.45rem;
+}
+
+.control-demo-field-form #field-layer-draw-start {
+    grid-column: 1 / -1;
+}
+
+.control-demo-field-form .action-row button {
+    min-width: 0;
+    padding-inline: 0.55rem;
+}
+
+.control-demo-mini-list {
+    max-height: 96px;
+    overflow: auto;
+    margin-top: 0.5rem;
+}
+
+.control-demo-queues {
+    display: grid;
+    grid-template-columns: minmax(270px, 0.95fr) minmax(290px, 1.05fr) minmax(350px, 1.2fr) minmax(270px, 0.95fr);
+    gap: 0.8rem;
+    margin-top: 0.8rem;
+    align-items: start;
+}
+
+.control-demo-queues .panel {
+    min-height: 0;
+    padding: 0.85rem;
+}
+
+.control-demo-queues .panel-head h3 {
+    font-size: 1.02rem;
+}
+
+.control-demo-queues .stack-list {
+    max-height: 330px;
+    overflow: auto;
+    padding-right: 0.15rem;
+}
+
+.control-demo-table-shell {
+    max-height: 330px;
+}
+
+.control-demo-table-shell .dense-table {
+    min-width: 580px;
+}
+
+.control-demo-shell .info-card,
+.control-demo-shell .task-card {
+    border-radius: 10px;
+    padding: 0.72rem 0.78rem;
+}
+
+.control-demo-shell .info-card-head {
+    gap: 0.55rem;
+    margin-bottom: 0.38rem;
+}
+
+.control-demo-shell .info-card-head strong,
+.control-demo-shell .task-card strong {
+    font-size: 0.92rem;
+}
+
+.control-demo-shell .info-grid {
+    font-size: 0.78rem;
+}
+
+.control-demo-shell .field-effect-strip {
+    gap: 0.3rem;
+    margin-bottom: 0.45rem;
+}
+
+.control-demo-shell .field-effect-badge {
+    min-height: 24px;
+    padding-inline: 0.45rem;
+    font-size: 0.62rem;
+}
+
+.control-demo-shell .status-chip {
+    border-radius: 7px;
+    padding: 0.2rem 0.42rem;
+}
+
+.control-demo-station-drawer {
+    margin-bottom: 0.65rem;
+}
+
+.control-demo-scenario {
+    margin-top: 0.8rem;
+    overflow: hidden;
+}
+
+.control-demo-scenario .utility-body {
+    overflow: hidden;
+    padding: 0.85rem;
+}
+
+.control-demo-scenario .demo-flow-strip {
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 0.55rem;
+    margin-bottom: 0.85rem;
+}
+
+.control-demo-scenario .demo-flow-step {
+    min-width: 0;
+    border-radius: 12px;
+    line-height: 1.18;
+    white-space: normal;
+}
+
+.control-demo-scenario-grid {
+    grid-auto-flow: dense;
+    grid-template-columns: minmax(260px, 0.75fr) minmax(430px, 1.25fr) minmax(300px, 1fr);
+    align-items: start;
+}
+
+.control-demo-scenario .demo-card {
+    min-width: 0;
+    border-radius: 12px;
+}
+
+.control-demo-scenario .demo-card:nth-child(2) {
+    grid-row: span 2;
+}
+
+.control-demo-scenario .compact-form,
+.control-demo-scenario .demo-station-block,
+.control-demo-scenario .demo-brief {
+    min-width: 0;
+}
+
+.control-demo-scenario input,
+.control-demo-scenario button {
+    min-width: 0;
+    width: 100%;
+}
+
+.control-demo-scenario .demo-row {
+    min-width: 0;
+}
+
+.control-demo-scenario .demo-row-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.control-demo-scenario .demo-row-3 {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.control-demo-scenario .demo-station-head {
+    align-items: flex-start;
+    flex-wrap: wrap;
+}
+
+.control-demo-scenario .demo-station-head small,
+.control-demo-scenario .demo-brief span {
+    overflow-wrap: anywhere;
+}
+
+.control-demo-shell .flash-line {
+    position: fixed;
+    left: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+    z-index: 1000;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.38);
+}
+
+@media (max-width: 1380px) {
+    .control-demo-workspace {
+        grid-template-columns: minmax(0, 1fr) minmax(340px, 380px);
+    }
+
+    .control-demo-queues {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .control-demo-scenario-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .control-demo-scenario .demo-card:nth-child(2) {
+        grid-column: 1 / -1;
+        grid-row: auto;
+    }
+}
+
+@media (max-width: 1080px) {
+    .control-demo-shell .status-ribbon {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .control-demo-workspace {
+        grid-template-columns: 1fr;
+        min-height: 0;
+    }
+
+    .control-demo-map {
+        grid-template-rows: auto minmax(460px, 58vh);
+    }
+
+    .control-demo-map-head .panel-head-actions {
+        max-width: none;
+    }
+
+    .control-demo-rail {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-rows: none;
+        max-height: none;
+        overflow: visible;
+        padding-right: 0;
+    }
+}
+
+@media (max-width: 760px) {
+    .control-demo-shell {
+        padding: 0.55rem;
+    }
+
+    .control-demo-shell .topbar,
+    .control-demo-shell .topbar-right,
+    .control-demo-shell .panel-head,
+    .control-demo-shell .panel-head-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+        justify-items: stretch;
+    }
+
+    .control-demo-shell .status-ribbon,
+    .control-demo-rail,
+    .control-demo-queues,
+    .control-demo-scenario-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .control-demo-scenario .demo-flow-strip,
+    .control-demo-scenario .demo-row-3,
+    .control-demo-scenario .demo-row-4 {
+        grid-template-columns: 1fr;
+    }
+
+    .control-demo-scenario .demo-card:nth-child(2) {
+        grid-column: auto;
+    }
+
+    .control-demo-map {
+        grid-template-rows: auto minmax(420px, 58vh);
+    }
+
+    .control-demo-map-frame .situation-map {
+        min-height: 420px;
+    }
+
+    .control-demo-field-form .action-row {
+        grid-template-columns: 1fr;
+    }
+
+    .control-demo-rail .task-timeline {
+        grid-template-columns: 1fr;
+    }
+}

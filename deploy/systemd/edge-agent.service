@@ -1,0 +1,49 @@
+[Unit]
+Description=Friend Drone Edge Agent
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=120
+StartLimitBurst=10
+
+[Service]
+Type=simple
+User=nvidia
+Group=nvidia
+WorkingDirectory=/opt/friend_drone
+EnvironmentFile=/etc/friend-drone/edge-agent.env
+ExecStart=/usr/bin/python3 -m edge_agent \
+  --input-mode ${INPUT_MODE} \
+  --target ${TARGET} \
+  --ingest-url ${INGEST_URL} \
+  --drone-uid ${DRONE_UID} \
+  --device-id ${DEVICE_ID} \
+  --shared-secret ${SHARED_SECRET} \
+  --bridge-token ${BRIDGE_TOKEN} \
+  --rate-hz ${RATE_HZ} \
+  --spool-db-path ${SPOOL_DB_PATH} \
+  --timeout-seconds ${TIMEOUT_SECONDS} \
+  --retry-max-attempts ${RETRY_MAX_ATTEMPTS} \
+  --retry-backoff-seconds ${RETRY_BACKOFF_SECONDS} \
+  --retry-backoff-max-seconds ${RETRY_BACKOFF_MAX_SECONDS} \
+  --queue-max ${QUEUE_MAX} \
+  --flush-batch-size ${FLUSH_BATCH_SIZE} \
+  --log-every ${LOG_EVERY} \
+  --mavlink-device ${MAVLINK_DEVICE} \
+  --mavlink-baud ${MAVLINK_BAUD} \
+  --udp-host ${UDP_HOST} \
+  --udp-port ${UDP_PORT}
+Restart=always
+RestartSec=3
+TimeoutStopSec=20
+KillSignal=SIGINT
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/friend-drone
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+

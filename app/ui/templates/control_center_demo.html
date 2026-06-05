@@ -1,0 +1,444 @@
+{% extends "base.html" %}
+{% block title %}Kontrol Merkezi | Hava Sahası{% endblock %}
+{% block head_extra %}
+<link rel="stylesheet" href="/ui/static/vendor/leaflet/leaflet.css?v={{ asset_version | default('1') }}">
+{% if map_config.use_vector_basemap %}
+<link rel="stylesheet" href="{{ map_config.maplibre_css_url }}">
+{% endif %}
+<link rel="stylesheet" href="/ui/static/css/control_center_demo.css?v={{ asset_version | default('1') }}">
+{% endblock %}
+{% block content %}
+<main class="command-shell terminal-shell control-demo-shell" data-page="control-center" data-readonly="{{ 'true' if readonly else 'false' }}">
+    <header class="topbar control-demo-topbar">
+        <div class="topbar-left">
+            <p class="eyebrow">Kontrol Merkezi / Canlı Operasyon</p>
+            <h1>KONTROL MERKEZİ</h1>
+            <p class="terminal-subline">
+                <span>{{ username }}</span>
+                <span>{{ role_label }}</span>
+                <span>Harita odaklı operasyon görünümü</span>
+            </p>
+        </div>
+        <div class="topbar-right">
+            {% if role == "admin" %}
+            <a class="ghost-btn nav-btn" href="/ui/operator">Operatör Paneli</a>
+            {% endif %}
+            <a class="ghost-btn nav-btn" href="/ui/drones">Drone Kayıtları</a>
+            <form method="post" action="/ui/logout" class="inline-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <button type="submit" class="ghost-btn">Çıkış</button>
+            </form>
+        </div>
+    </header>
+
+    <section class="status-ribbon control-demo-metrics" aria-label="Operasyon metrikleri">
+        <div class="metric-card" data-tone="track">
+            <span>Canlı İzler</span>
+            <strong id="metric-track-total">0</strong>
+            <small id="metric-track-breakdown">Keşif 0 / Önleyici 0</small>
+        </div>
+        <div class="metric-card" data-tone="hostile">
+            <span>Hedef Tespitleri</span>
+            <strong id="metric-detection-total">0</strong>
+            <small id="metric-detection-breakdown">Açık 0 / Atanmış 0 / İmha 0</small>
+        </div>
+        <div class="metric-card" data-tone="task">
+            <span>Angajman Görevleri</span>
+            <strong id="metric-task-total">0</strong>
+            <small id="metric-task-breakdown">Beklemede 0 / Kabul 0</small>
+        </div>
+        <div class="metric-card" data-tone="station">
+            <span>Operatör İstasyonları</span>
+            <strong id="metric-station-total">0</strong>
+            <small id="metric-station-breakdown">Aktif 0</small>
+        </div>
+    </section>
+
+    <section class="control-demo-workspace">
+        <article class="panel map-panel command-map-panel control-demo-map">
+            <div class="panel-head control-demo-map-head">
+                <div>
+                    <p class="panel-kicker">Saha görünümü</p>
+                    <h3>Canlı Operasyon Haritası</h3>
+                    <small>Harita, önleme durumu ve çizim araçları aynı çalışma alanında</small>
+                </div>
+                <div class="panel-head-actions map-head-actions">
+                    <div class="map-head-meta">
+                        <span class="map-chip recon-chip">Keşif</span>
+                        <span class="map-chip interceptor-chip">Önleyici</span>
+                        <span class="map-chip hostile-chip">Düşman Hedef</span>
+                        <span class="map-chip station-chip">Operatör İstasyonu</span>
+                        <span class="map-chip field-layer-chip">Saha Katmanı</span>
+                        <span class="map-chip air-traffic-chip">Sivil Trafik</span>
+                    </div>
+                    {% if role == "admin" and demo_mode_enabled %}
+                    <button type="button" class="ghost-btn map-target-toggle" id="toggle-map-target-picker" aria-pressed="false">Hedef Ekle</button>
+                    <button type="button" class="ghost-btn map-target-confirm" id="confirm-map-target" hidden>Hedefi Onayla</button>
+                    <button type="button" class="ghost-btn map-target-cancel" id="cancel-map-target" hidden>Vazgeç</button>
+                    {% endif %}
+                    <button type="button" class="ghost-btn air-traffic-toggle" id="toggle-air-traffic" aria-pressed="false">Sivil Hava Trafiğini Aktif Et</button>
+                    <button type="button" class="ghost-btn" id="refresh-control-center">Veriyi Tazele</button>
+                </div>
+            </div>
+            <div class="map-frame control-demo-map-frame">
+                <div id="control-map-canvas" class="situation-map" role="img" aria-label="Canlı operasyon haritası" data-map-config='{{ map_config | tojson | forceescape }}'></div>
+                <div class="map-hud">
+                    <p id="control-map-summary">Harita verisi bekleniyor.</p>
+                    <small id="control-map-focus">Bir hedef veya görev seçerek odağı daraltabilirsiniz.</small>
+                </div>
+            </div>
+        </article>
+
+        <aside class="control-demo-rail" aria-label="Operasyon araçları">
+            <details class="panel support-panel field-layer-panel control-demo-tool" open>
+                <summary class="control-demo-tool-summary">
+                    <span class="control-demo-tool-copy">
+                        <span class="panel-kicker">Saha planı</span>
+                        <strong>Saha Katmanı</strong>
+                        <small>Çizim ve kaydetme işlemleri haritanın yanında kalır</small>
+                    </span>
+                </summary>
+                <div class="control-demo-tool-body">
+                {% if not readonly %}
+                <form id="field-layer-form" class="compact-form control-demo-field-form">
+                    <label for="field-layer-name">Katman Adı</label>
+                    <input id="field-layer-name" type="text" placeholder="Tuzla üs çevresi" required>
+                    <div class="control-demo-form-grid">
+                        <div>
+                            <label for="field-layer-type">Katman Tipi</label>
+                            <select id="field-layer-type">
+                                <option value="base_perimeter">Üs Çevresi</option>
+                                <option value="safe_corridor">Güvenli Koridor</option>
+                                <option value="patrol_area">Devriye Bölgesi</option>
+                                <option value="restricted_area">Kısıtlı Bölge</option>
+                                <option value="custom">Özel Katman</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="field-layer-color">Renk</label>
+                            <input id="field-layer-color" type="color" value="#2d8cff">
+                        </div>
+                    </div>
+                    <div id="field-layer-color-palette" class="field-layer-color-palette" aria-label="Katman renk seçenekleri"></div>
+                    <p class="form-note field-layer-color-note" id="field-layer-color-note">Katman tipine göre sabit renk kullanılır.</p>
+                    <div class="action-row">
+                        <button type="button" class="ghost-btn" id="field-layer-draw-start">Çizimi Başlat</button>
+                        <button type="submit" id="field-layer-save" disabled>Katmanı Kaydet</button>
+                        <button type="button" class="danger-btn" id="field-layer-cancel" disabled>Vazgeç</button>
+                    </div>
+                    <p class="form-note" id="field-layer-draft-status">Çizim başlatılmadı.</p>
+                </form>
+                {% endif %}
+                <div class="stack-list field-layer-list control-demo-mini-list" id="field-layers-list"></div>
+                </div>
+            </details>
+
+            <details class="panel focus-panel intercept-progress-panel control-demo-tool">
+                <summary class="control-demo-tool-summary">
+                    <span class="control-demo-tool-copy">
+                        <span class="panel-kicker">Canlı önleme</span>
+                        <strong>Önleme İlerlemesi</strong>
+                        <small>Seçili görevde önleyicinin hedefe yaklaşma durumu</small>
+                    </span>
+                </summary>
+                <div class="control-demo-tool-body">
+                <div id="control-progress-panel" class="progress-panel empty-state">
+                    Aktif görev seçildiğinde kalan mesafe, ETA ve ilerleme burada gösterilir.
+                </div>
+                </div>
+            </details>
+
+            <details class="panel focus-panel task-timeline-panel control-demo-tool">
+                <summary class="control-demo-tool-summary">
+                    <span class="control-demo-tool-copy">
+                        <span class="panel-kicker">Görev zaman çizgisi</span>
+                        <strong>Operasyon Akışı</strong>
+                        <small>Tespit, atama, kabul ve kapanış adımları</small>
+                    </span>
+                </summary>
+                <div class="control-demo-tool-body">
+                <div id="task-timeline" class="task-timeline empty-state">
+                    Görev seçildiğinde operasyon adımları burada gösterilir.
+                </div>
+                </div>
+            </details>
+
+            <details class="panel focus-panel replay-panel control-demo-tool">
+                <summary class="control-demo-tool-summary">
+                    <span class="control-demo-tool-copy">
+                        <span class="panel-kicker">Olay geri sarma</span>
+                        <strong>Görev Replay</strong>
+                        <small>Keşif ve önleyici izlerini zaman çizgisinde oynatır</small>
+                    </span>
+                </summary>
+                <div class="control-demo-tool-body">
+                <div class="replay-controls" id="control-replay-panel">
+                    <div class="replay-headline">
+                        <strong id="control-replay-title">Görev seçilmedi</strong>
+                        <small id="control-replay-clock">--:--:--</small>
+                    </div>
+                    <input id="control-replay-slider" class="replay-slider" type="range" min="0" max="1000" value="1000" disabled>
+                    <div class="action-row replay-actions">
+                        <button type="button" class="ghost-btn" id="control-replay-play" disabled>Oynat</button>
+                        <select id="control-replay-speed" disabled>
+                            <option value="1">1x</option>
+                            <option value="2" selected>2x</option>
+                            <option value="4">4x</option>
+                        </select>
+                    </div>
+                    <p class="form-note" id="control-replay-status">Replay için aktif görev seçin.</p>
+                </div>
+                </div>
+            </details>
+        </aside>
+    </section>
+
+    <section class="control-demo-queues" aria-label="Operasyon listeleri">
+        <article class="panel focus-panel">
+            <div class="panel-head">
+                <div>
+                    <p class="panel-kicker">Birincil akış</p>
+                    <h3>Hedef Tespitleri</h3>
+                    <small>Harita odağı için hedef seçimi</small>
+                </div>
+                <small class="muted-note">6400 NATO mili</small>
+            </div>
+            <div class="stack-list" id="detections-list"></div>
+        </article>
+
+        <article class="panel focus-panel">
+            <div class="panel-head">
+                <div>
+                    <p class="panel-kicker">Birincil akış</p>
+                    <h3>Angajman Görevleri</h3>
+                    <small>Seçilen görev harita, ilerleme ve replay odağını belirler</small>
+                </div>
+            </div>
+            <div class="stack-list" id="tasks-list"></div>
+        </article>
+
+        <article class="panel support-panel">
+            <div class="panel-head">
+                <div>
+                    <p class="panel-kicker">Destekleyici iz</p>
+                    <h3>Dost Platform İzleri</h3>
+                    <small>Canlı keşif ve önleyici platform listesi</small>
+                </div>
+            </div>
+            <div class="table-shell control-demo-table-shell">
+                <table class="dense-table">
+                    <thead>
+                        <tr>
+                            <th>Kimlik</th>
+                            <th>Rol</th>
+                            <th>Konum</th>
+                            <th>Hız</th>
+                            <th>İstikamet</th>
+                            <th>Son Görme</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tracks-table-body"></tbody>
+                </table>
+            </div>
+        </article>
+
+        <article class="panel support-panel">
+            <div class="panel-head">
+                <div>
+                    <p class="panel-kicker">Atama omurgası</p>
+                    <h3>Operatör İstasyonları</h3>
+                    <small>En yakın istasyon seçimi bu konumlarla yapılır</small>
+                </div>
+            </div>
+            {% if not readonly %}
+            <details class="utility-drawer control-demo-station-drawer">
+                <summary class="utility-summary">
+                    <span class="utility-copy">
+                        <strong>Yeni operatör istasyonu ekle</strong>
+                        <small>Formu açarak yeni önleyici atama noktası tanımlayın</small>
+                    </span>
+                </summary>
+                <div class="utility-body">
+                    <form id="station-form" class="compact-form">
+                        <label for="station-user-id">Operatör Kullanıcı Kimliği</label>
+                        <input id="station-user-id" type="text" required>
+                        <label for="station-name">İstasyon Adı</label>
+                        <input id="station-name" type="text" required>
+                        <div class="two-col">
+                            <div>
+                                <label for="station-lat">Enlem</label>
+                                <input id="station-lat" type="number" step="0.000001" required>
+                            </div>
+                            <div>
+                                <label for="station-lon">Boylam</label>
+                                <input id="station-lon" type="number" step="0.000001" required>
+                            </div>
+                        </div>
+                        <label for="station-drone-id">Önleyici Drone Kimliği</label>
+                        <input id="station-drone-id" type="text" placeholder="Opsiyonel">
+                        <label class="inline-check">
+                            <input id="station-active" type="checkbox" checked>
+                            <span>İstasyon aktif</span>
+                        </label>
+                        <button type="submit">İstasyonu Kaydet</button>
+                    </form>
+                </div>
+            </details>
+            {% endif %}
+            <div class="stack-list" id="stations-list"></div>
+        </article>
+    </section>
+
+    {% if role == "admin" and demo_mode_enabled %}
+    <details class="panel admin-utility presentation-demo-panel control-demo-scenario">
+        <summary class="utility-summary">
+            <span class="utility-copy">
+                <strong>Sunum Akışı</strong>
+                <small>Demo verisini kur, haritadan hedef üret ve operatör panelinden önlemeyi izle</small>
+            </span>
+        </summary>
+        <div class="utility-body">
+            <div class="demo-flow-strip" id="demo-flow-strip">
+                <span class="demo-flow-step" data-demo-step="reset"><b>1</b> Demoyu Sıfırla</span>
+                <span class="demo-flow-step" data-demo-step="scenario"><b>2</b> Senaryoyu Kur</span>
+                <span class="demo-flow-step" data-demo-step="detection"><b>3</b> Hedef Tespiti Oluştur</span>
+                <span class="demo-flow-step" data-demo-step="operator"><b>4</b> Operatör Panelini Aç</span>
+                <span class="demo-flow-step" data-demo-step="intercept"><b>5</b> Kabul Et ve İzle</span>
+            </div>
+            <div class="demo-grid control-demo-scenario-grid">
+                <section class="demo-card demo-card-priority">
+                    <div class="demo-card-head">
+                        <h4>1. Demoyu Sıfırla</h4>
+                        <small>Yalnızca DEMO-* kayıtları temizlenir</small>
+                    </div>
+                    <button type="button" class="danger-btn" id="demo-reset-button">Demo Verisini Sıfırla</button>
+                    <div id="demo-reset-result" class="empty-state">
+                        Temiz başlangıç için sunumdan önce bir kez sıfırlayın.
+                    </div>
+                </section>
+
+                <section class="demo-card">
+                    <div class="demo-card-head">
+                        <h4>2. Senaryoyu Kur</h4>
+                        <small>Keşif izi, 3 istasyon ve 3 önleyici hazırlanır</small>
+                    </div>
+                    <form id="demo-scenario-form" class="compact-form">
+                        <div class="demo-row demo-row-4">
+                            <div>
+                                <label for="demo-recon-lat">Keşif Enlem</label>
+                                <input id="demo-recon-lat" type="number" step="0.000001" value="40.911000" required>
+                            </div>
+                            <div>
+                                <label for="demo-recon-lon">Keşif Boylam</label>
+                                <input id="demo-recon-lon" type="number" step="0.000001" value="29.290000" required>
+                            </div>
+                            <div>
+                                <label for="demo-recon-alt">Keşif İrtifa</label>
+                                <input id="demo-recon-alt" type="number" step="1" value="1200" required>
+                            </div>
+                            <div>
+                                <label for="demo-recon-heading">Keşif İstikamet</label>
+                                <input id="demo-recon-heading" type="number" step="0.1" value="35" required>
+                            </div>
+                        </div>
+
+                        <div class="demo-station-block">
+                            <div class="demo-station-head">
+                                <strong>Operatör 1</strong>
+                                <small>`demo_operator_1` / `DEMO-INT-01`</small>
+                            </div>
+                            <div class="demo-row demo-row-3">
+                                <input id="demo-station-1-name" type="text" value="Tuzla Operatör" required>
+                                <input id="demo-station-1-lat" type="number" step="0.000001" value="40.825500" required>
+                                <input id="demo-station-1-lon" type="number" step="0.000001" value="29.309500" required>
+                            </div>
+                        </div>
+
+                        <div class="demo-station-block">
+                            <div class="demo-station-head">
+                                <strong>Operatör 2</strong>
+                                <small>`demo_operator_2` / `DEMO-INT-02`</small>
+                            </div>
+                            <div class="demo-row demo-row-3">
+                                <input id="demo-station-2-name" type="text" value="Pendik Operatör" required>
+                                <input id="demo-station-2-lat" type="number" step="0.000001" value="40.879000" required>
+                                <input id="demo-station-2-lon" type="number" step="0.000001" value="29.235000" required>
+                            </div>
+                        </div>
+
+                        <div class="demo-station-block">
+                            <div class="demo-station-head">
+                                <strong>Operatör 3</strong>
+                                <small>`demo_operator_3` / `DEMO-INT-03`</small>
+                            </div>
+                            <div class="demo-row demo-row-3">
+                                <input id="demo-station-3-name" type="text" value="Kartal Operatör" required>
+                                <input id="demo-station-3-lat" type="number" step="0.000001" value="40.905500" required>
+                                <input id="demo-station-3-lon" type="number" step="0.000001" value="29.185000" required>
+                            </div>
+                        </div>
+
+                        <button type="submit">Demo Senaryoyu Kur</button>
+                    </form>
+                    <div id="demo-credentials" class="stack-list"></div>
+                </section>
+
+                <section class="demo-card">
+                    <div class="demo-card-head">
+                        <h4>3. Hedef Tespiti Oluştur</h4>
+                        <small>Haritadan hedef seçimi bu alanları otomatik doldurur</small>
+                    </div>
+                    <form id="demo-detection-form" class="compact-form">
+                        <label for="demo-contact-id">Temas Kimliği</label>
+                        <input id="demo-contact-id" type="text" value="HST-DEMO-001" required>
+                        <div class="demo-row demo-row-3">
+                            <div>
+                                <label for="demo-target-lat">Hedef Enlem</label>
+                                <input id="demo-target-lat" type="number" step="0.000001" value="40.844500" required>
+                            </div>
+                            <div>
+                                <label for="demo-target-lon">Hedef Boylam</label>
+                                <input id="demo-target-lon" type="number" step="0.000001" value="29.333500" required>
+                            </div>
+                            <div>
+                                <label for="demo-target-alt">Hedef İrtifa</label>
+                                <input id="demo-target-alt" type="number" step="1" value="350" required>
+                            </div>
+                        </div>
+                        <label for="demo-confidence">Güven</label>
+                        <input id="demo-confidence" type="number" min="0" max="100" step="1" value="88" required>
+                        <button type="submit">Tespiti Oluştur</button>
+                    </form>
+                    <div id="demo-last-detection" class="empty-state">
+                        Demo tespiti oluşturulduğunda en yakın operatör bilgisi burada gösterilir.
+                    </div>
+                </section>
+
+                <section class="demo-card demo-card-priority">
+                    <div class="demo-card-head">
+                        <h4>4. Operatör Panelini Aç</h4>
+                        <small>Yeni sekmede görev ekranını aç</small>
+                    </div>
+                    <button type="button" id="demo-open-operator">Operatör Panelini Aç</button>
+                    <div class="demo-brief">
+                        <strong>Sunum anlatımı</strong>
+                        <span>Keşif İHA hedefi tespit eder, sistem en yakın istasyonu seçer, operatör görevi kabul eder ve önleyici hedefe ilerler.</span>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </details>
+    {% endif %}
+
+    <section id="flash-message" class="flash-line" hidden></section>
+</main>
+{% endblock %}
+{% block body_end %}
+<script src="/ui/static/vendor/leaflet/leaflet.js?v={{ asset_version | default('1') }}" defer></script>
+{% if map_config.use_vector_basemap %}
+<script src="{{ map_config.maplibre_js_url }}" defer></script>
+<script src="{{ map_config.maplibre_leaflet_js_url }}" defer></script>
+{% endif %}
+<script src="/ui/static/js/track_map.js?v={{ asset_version | default('1') }}" defer></script>
+<script src="/ui/static/js/control_center.js?v={{ asset_version | default('1') }}" defer></script>
+{% endblock %}

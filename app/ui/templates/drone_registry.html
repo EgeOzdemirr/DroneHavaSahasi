@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block title %}Drone Kayıtları | Hava Sahası{% endblock %}
+{% block content %}
+<main class="registry-shell command-shell terminal-shell registry-terminal-shell">
+    <header class="topbar">
+        <div class="topbar-left">
+            <p class="eyebrow">Saha Terminali / Platform ve Anahtar Kaydı</p>
+            <h1>DRONE KAYDI</h1>
+            <p class="terminal-subline">
+                <span>{{ username }}</span>
+                <span>{{ role_label }}</span>
+                <span>Keşif ve önleyici platform yönetimi</span>
+            </p>
+        </div>
+        <div class="topbar-right">
+            <a class="ghost-btn nav-btn" href="{{ default_home }}">Ana Panel</a>
+        </div>
+    </header>
+
+    {% if error %}
+    <section class="flash-line error-box">{{ error }}</section>
+    {% endif %}
+
+    {% if success %}
+    <section class="flash-line success-box">{{ success }}</section>
+    {% endif %}
+
+    {% if provisioned %}
+    <section class="panel provision-box registry-provision-panel">
+        <div class="panel-head">
+            <div>
+                <p class="panel-kicker">Provision çıktısı</p>
+                <h3>Üretilen Erişim Bilgileri</h3>
+                <small>Bu secret değerini güvenli bir yerde saklayın.</small>
+            </div>
+        </div>
+        <dl class="provision-grid">
+            <dt>Drone Kimliği</dt><dd>{{ provisioned.drone_uid }}</dd>
+            <dt>Anahtar Kimliği</dt><dd>{{ provisioned.key_id }}</dd>
+            <dt>Paylaşılan Gizli Anahtar</dt><dd><code>{{ provisioned.shared_secret }}</code></dd>
+        </dl>
+    </section>
+    {% endif %}
+
+    <section class="registry-grid">
+        <article class="panel registry-form-panel">
+            <div class="panel-head">
+                <div>
+                    <p class="panel-kicker">Yeni platform</p>
+                    <h3>Drone Ekle</h3>
+                    <small>Keşif veya önleyici platform tanımı</small>
+                </div>
+            </div>
+            <form method="post" action="/ui/drones" class="registry-form compact-form" id="registry-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+                <label for="unit_class">Birim Sınıfı</label>
+                <select id="unit_class" name="unit_class">
+                    {% for item in unit_classes %}
+                    <option value="{{ item.value }}" {% if item.value == unit_class %}selected{% endif %}>{{ item.label }}</option>
+                    {% endfor %}
+                </select>
+
+                <label for="drone_uid">Drone Kimliği</label>
+                <input id="drone_uid" name="drone_uid" type="text" value="{{ suggested_uid }}" readonly required>
+
+                <label for="platform_role">Platform Rolü</label>
+                <select id="platform_role" name="platform_role">
+                    {% for item in platform_roles %}
+                    <option value="{{ item }}">{{ platform_role_labels[item] }}</option>
+                    {% endfor %}
+                </select>
+
+                <label for="status_value">Durum</label>
+                <select id="status_value" name="status_value">
+                    <option value="active">{{ drone_status_labels["active"] }}</option>
+                    <option value="inactive">{{ drone_status_labels["inactive"] }}</option>
+                </select>
+
+                <label for="shared_secret">Paylaşılan Gizli Anahtar (opsiyonel)</label>
+                <input id="shared_secret" name="shared_secret" type="text" placeholder="Boş bırakılırsa otomatik üretilir">
+
+                {% if role in ["admin", "operator"] %}
+                <button type="submit">Drone Ekle</button>
+                {% else %}
+                    <p class="form-note">Gözlemci rolü bu sayfayı sadece izleyebilir.</p>
+                {% endif %}
+            </form>
+        </article>
+
+        <article class="panel registry-table-panel">
+            <div class="panel-head">
+                <div>
+                    <p class="panel-kicker">Kayıt havuzu</p>
+                    <h3>Kayıtlı Drone'lar</h3>
+                    <small>{{ drones|length }} adet platform tanımı bulundu</small>
+                </div>
+            </div>
+            <div class="drone-card-grid">
+                {% if drones %}
+                    {% for item in drones %}
+                    {% set track = track_by_uid.get(item.drone_uid) %}
+                    {% set devices = devices_by_drone_id.get(item.id, []) %}
+                    <article class="drone-registry-card {{ item.platform_role.value }}">
+                        <div class="drone-card-topline">
+                            <div>
+                                <strong>{{ item.drone_uid }}</strong>
+                                <small>{{ item.unit }}</small>
+                            </div>
+                            <span class="status-pill role-pill {{ item.platform_role.value }}">{{ platform_role_labels[item.platform_role.value] }}</span>
+                        </div>
+                        <div class="drone-card-status-row">
+                            <span class="status-pill {{ item.status.value|upper }}">{{ drone_status_labels[item.status.value] }}</span>
+                            <code>{{ item.key_id }}</code>
+                        </div>
+                        <div class="drone-card-metrics">
+                            <span><b>Son Telemetri</b>{{ track.last_seen_at if track else "-" }}</span>
+                            <span><b>Konum</b>{{ "%.5f, %.5f"|format(track.lat, track.lon) if track else "-" }}</span>
+                            <span><b>Hız</b>{{ "%.1f m/s"|format(track.speed_mps) if track else "-" }}</span>
+                            <span><b>İrtifa</b>{{ "%.1f m"|format(track.alt_m) if track else "-" }}</span>
+                            <span><b>İstikamet</b>{{ "%.1f°"|format(track.heading_deg) if track else "-" }}</span>
+                            <span><b>Cihaz</b>{{ devices|length }} bağlı</span>
+                        </div>
+                        {% if devices %}
+                        <div class="drone-device-strip">
+                            {% for device in devices[:3] %}
+                            <span>{{ device.device_id }} / {{ device.status.value }}{% if device.last_seen_at %} / {{ device.last_seen_at }}{% endif %}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        <div class="drone-card-footer">
+                            <small>Oluşturulma: {{ item.created_at }}</small>
+                            {% if role in ["admin", "operator"] %}
+                            <form method="post" action="/ui/drones/{{ item.id }}/delete" class="inline-form">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                <input type="hidden" name="unit_class" value="{{ unit_class }}">
+                                <button type="submit" class="danger-btn" onclick="return confirm('Bu drone kaydini silmek istediginize emin misiniz?');">
+                                    Sil
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </article>
+                    {% endfor %}
+                {% else %}
+                <div class="empty-state">Henüz kayıtlı drone yok.</div>
+                {% endif %}
+            </div>
+        </article>
+    </section>
+</main>
+<script src="/ui/static/js/drone_registry.js?v={{ asset_version | default('1') }}" defer></script>
+{% endblock %}
