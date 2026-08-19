@@ -8,20 +8,34 @@ from app.security.auth import hash_password
 
 
 def ensure_bootstrap_admin(db: Session) -> None:
+    """Yonetici hesabini ortam degiskenlerine gore her acilista eslestirir.
+
+    Hesap yoksa olusturulur, varsa rolu/aktifligi/sifresi ortam degerlerine geri
+    yazilir ve sifre degistirme zorunlulugu kaldirilir. Boylece dagitim sahibi,
+    BOOTSTRAP_ADMIN_PASSWORD degerini degistirip servisi yeniden baslatarak
+    girisini her zaman kurtarabilir; sifreyi unutmak kilitlenmeye yol acmaz.
+    """
     settings = get_settings()
     stmt = select(User).where(User.username == settings.bootstrap_admin_username)
     existing = db.execute(stmt).scalar_one_or_none()
-    if existing:
-        return
+    password_hash = hash_password(settings.bootstrap_admin_password)
 
-    user = User(
-        username=settings.bootstrap_admin_username,
-        password_hash=hash_password(settings.bootstrap_admin_password),
-        role=UserRole.admin,
-        is_active=True,
-        must_change_password=True,
-    )
-    db.add(user)
+    if existing:
+        existing.role = UserRole.admin
+        existing.is_active = True
+        existing.must_change_password = False
+        existing.password_hash = password_hash
+        db.add(existing)
+    else:
+        db.add(
+            User(
+                username=settings.bootstrap_admin_username,
+                password_hash=password_hash,
+                role=UserRole.admin,
+                is_active=True,
+                must_change_password=False,
+            )
+        )
     db.commit()
 
 

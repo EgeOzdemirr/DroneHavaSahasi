@@ -95,18 +95,24 @@ hesapta kullanildiysa Render sonuna ek getirir. Adres farkliysa servis ->
 
 Bu adim atlanirsa uygulama `prod` dogrulamasi yuzunden acilmaz.
 
-### 4. Ilk giris ve sifre kilitleme
+### 4. Ilk giris
 
-Bootstrap admin `must_change_password=True` ile olusur (`app/services/bootstrap.py`).
-Bu yuzden **demoyu paylasmadan once sen gir**:
+Hem admin hem gozlemci hesabi acilista ortam degiskenlerine gore olusturulur ve
+her yeniden baslatmada bu degerlere geri esitlenir (`app/services/bootstrap.py`).
+Zorunlu sifre degistirme ekrani yoktur; Render'da hangi sifreyi yazdiysan onunla
+dogrudan girersin:
 
 1. `https://<adres>/ui/login`
-2. Adim 2'deki kullanici adi/sifre ile giris yap.
-3. Zorunlu sifre degistirme ekraninda kalici demo sifresini belirle.
-4. Artik yalnizca bu son sifreyi paylas.
+2. Admin: `BOOTSTRAP_ADMIN_USERNAME` / `BOOTSTRAP_ADMIN_PASSWORD`
+3. Gozlemci: `BOOTSTRAP_VIEWER_USERNAME` / `BOOTSTRAP_VIEWER_PASSWORD`
 
-Bu adim atlanirsa, linki acan ilk kisi sifreyi degistirmek zorunda kalir ve
-kontrolu eline alir.
+**Sifreyi kaybedersen kurtarma:** Render -> Environment -> ilgili `..._PASSWORD`
+degerini degistir -> servisi yeniden baslat. Acilista hesap yeni sifreye
+esitlenir, eski sifre gecersiz olur. Veritabanina elle mudahale gerekmez.
+
+> Bu deterministik davranis demoyu paylasilabilir kilar: UI'dan yapilan bir sifre
+> degisikligi kalici olmaz, sonraki yeniden baslatmada ortam degerine doner. Kalici
+> kimlik yonetimi gereken gercek bir kurulumda bu davranisi degistir.
 
 ### 5. Demo senaryosu
 

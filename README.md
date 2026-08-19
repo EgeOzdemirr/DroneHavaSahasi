@@ -199,15 +199,17 @@ New session checklist:
 - Security headers: CSP, `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`
 - Prod hardening blocks weak defaults in `ENVIRONMENT=prod` for JWT secret, bridge token, Fernet master key, admin password, cookies, and CORS.
 
-## Bootstrap Password Enforcement
+## Bootstrap Accounts
 
-- Bootstrap admin must change password after first login.
-- API login returns `password_change_required`.
-- Password change endpoint:
-  - `POST /v1/auth/change-password`
-  - body: `{"current_password":"...","new_password":"..."}`
-- UI redirects to `/ui/change-password` when required.
-- Role-protected endpoints return `403 password_change_required` until the password is changed.
+- Bootstrap admin and (optionally) a read-only viewer are provisioned at startup
+  from environment variables and re-synced to those values on every boot, so a lost
+  password is recovered by changing the env value and restarting — no lockout, no
+  manual database edits (`app/services/bootstrap.py`).
+- The password-change flow itself still exists for accounts created with
+  `must_change_password=True`:
+  - `POST /v1/auth/change-password` — body `{"current_password":"...","new_password":"..."}`
+  - UI redirects to `/ui/change-password` when required.
+  - Role-protected endpoints return `403 password_change_required` until changed.
 
 ## Telemetry Ingest Contract
 
