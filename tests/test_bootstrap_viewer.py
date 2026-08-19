@@ -1,3 +1,4 @@
+from cryptography.fernet import Fernet
 import pytest
 from pydantic import ValidationError
 from sqlalchemy import create_engine, select
@@ -12,7 +13,7 @@ from app.security.auth import hash_password, verify_password
 from app.services import bootstrap
 
 
-VALID_MASTER_KEY = "***REMOVED***"
+VALID_MASTER_KEY = Fernet.generate_key().decode()  # test icin gecici anahtar; repoda sabit deger yok
 VIEWER_PASSWORD = "gozlemci-demo-2026"
 
 

@@ -1,3 +1,4 @@
+from cryptography.fernet import Fernet
 import pytest
 from pydantic import ValidationError
 
@@ -5,7 +6,7 @@ from app.config import Settings
 from bridge.config import BridgeSettings
 
 
-VALID_MASTER_KEY = "***REMOVED***"
+VALID_MASTER_KEY = Fernet.generate_key().decode()  # test icin gecici anahtar; repoda sabit deger yok
 
 
 def test_app_settings_rejects_weak_prod_jwt_secret() -> None:

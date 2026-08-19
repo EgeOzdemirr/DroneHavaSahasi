@@ -43,6 +43,9 @@ class Settings(BaseSettings):
     demo_mode_enabled: bool = Field(default=True, alias="DEMO_MODE_ENABLED")
     demo_interceptor_speed_mps: float = Field(default=95.0, alias="DEMO_INTERCEPTOR_SPEED_MPS")
     demo_interceptor_min_duration_seconds: int = Field(default=25, alias="DEMO_INTERCEPTOR_MIN_DURATION_SECONDS")
+    # Bos birakilirsa senaryo yuklemede sureç basina rastgele bir sifre uretilir
+    # ve seed yanitinda dondurulur; boylece repoda sabit bir demo sifresi tutulmaz.
+    demo_operator_password: str = Field(default="", alias="DEMO_OPERATOR_PASSWORD")
     map_provider: Literal["openfreemap", "offline"] = Field(default="openfreemap", alias="MAP_PROVIDER")
     map_label_language: str = Field(default="tr", alias="MAP_LABEL_LANGUAGE")
     map_hidden_labels: str = Field(

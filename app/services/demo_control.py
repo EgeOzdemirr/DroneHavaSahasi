@@ -8,6 +8,7 @@ from uuid import uuid4
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
+from app.config import get_settings
 from app.db.models import Device, Drone, DroneKey, HostileDetection, InterceptTask, OperatorStation, TelemetryEvent, TrackState, User
 from app.domain.enums import DroneStatus, KeyStatus, PlatformRole, ReasonCode, SignatureAlgorithm, UserRole
 from app.schemas.models import (
@@ -26,7 +27,9 @@ from app.services.intercept_control import DetectionTaskResult, InterceptControl
 from app.services.intercept_simulation import haversine_m, initial_bearing_deg
 
 DEMO_RECON_UID = "DEMO-RECON-01"
-DEMO_OPERATOR_PASSWORD = "***REMOVED***"
+# Ortam degiskeni bos oldugunda kullanilacak, surec omru boyunca sabit yedek sifre.
+# Repoda sabit bir kimlik bilgisi tutmamak icin uretim zamaninda olusturulur.
+_FALLBACK_DEMO_OPERATOR_PASSWORD = secrets.token_urlsafe(12)
 DEMO_DRONE_PREFIX = "DEMO-%"
 DEMO_OPERATOR_PREFIX = "demo_operator_%"
 DEMO_CONTACT_PREFIX = "HST-DEMO%"
@@ -82,18 +85,22 @@ def _ensure_drone(db: Session, *, drone_uid: str, unit: str, platform_role: Plat
     return drone
 
 
+def _demo_operator_password() -> str:
+    return get_settings().demo_operator_password.strip() or _FALLBACK_DEMO_OPERATOR_PASSWORD
+
+
 def _ensure_operator_user(db: Session, *, username: str) -> User:
     user = db.execute(select(User).where(User.username == username)).scalar_one_or_none()
     if user is not None:
         user.role = UserRole.operator
         user.is_active = True
         user.must_change_password = False
-        user.password_hash = hash_password(DEMO_OPERATOR_PASSWORD)
+        user.password_hash = hash_password(_demo_operator_password())
         return user
 
     user = User(
         username=username,
-        password_hash=hash_password(DEMO_OPERATOR_PASSWORD),
+        password_hash=hash_password(_demo_operator_password()),
         role=UserRole.operator,
         is_active=True,
         must_change_password=False,
@@ -205,7 +212,7 @@ def _ensure_station(
     )
     return DemoOperatorIdentity(
         username=username,
-        password=DEMO_OPERATOR_PASSWORD,
+        password=_demo_operator_password(),
         station_name=payload.name.strip(),
         interceptor_drone_uid=drone_uid,
     )

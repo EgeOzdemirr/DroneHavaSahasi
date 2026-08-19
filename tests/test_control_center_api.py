@@ -563,7 +563,8 @@ def test_demo_detection_acceptance_simulates_and_auto_completes() -> None:
     assert create.json()["assigned_station_name"] == "Tuzla Operator"
     assert create.json()["detection"]["target_alt_m"] == 350.0
 
-    operator_token = _login(client, "demo_operator_1", "***REMOVED***")
+    operator_password = seed.json()["operators"][0]["password"]
+    operator_token = _login(client, "demo_operator_1", operator_password)
     operator_headers = {"Authorization": f"Bearer {operator_token}"}
     tasks_resp = client.get("/v1/intercept-tasks/me", headers=operator_headers)
     assert tasks_resp.status_code == 200

@@ -128,11 +128,10 @@ docker compose up -d --build
    - Accept the task
    - Watch simulated interceptor movement
 
-Demo operator credentials:
-
-- `demo_operator_1 / ***REMOVED***`
-- `demo_operator_2 / ***REMOVED***`
-- `demo_operator_3 / ***REMOVED***`
+Demo operator accounts (`demo_operator_1..N`) are created when the scenario is
+seeded. Their password is taken from `DEMO_OPERATOR_PASSWORD`; if that variable is
+empty a random password is generated per run and returned in the seed response, so
+no demo credential is stored in this repository.
 
 Demo mode settings:
 

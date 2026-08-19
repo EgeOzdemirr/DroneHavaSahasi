@@ -120,9 +120,12 @@ Kontrol merkezindeki `Sunum Akisi` paneli ile: reset -> senaryo yukle -> hedef
 olustur -> operator panelinden gorevi kabul et. Ayrintilar README'deki
 "Decision-Maker Demo" bolumunde.
 
-Senaryo yukleme `demo_operator_1..3 / ***REMOVED***` hesaplarini olusturur ve bu
-sifreler README'de yazilidir. Demoyu tanimadigin kisilere aciyorsan senaryoyu
-sunumdan sonra `Reset` ile temizle veya bu hesaplarin sifresini degistir.
+Senaryo yukleme `demo_operator_1..N` operator hesaplarini olusturur. Sifreleri
+`DEMO_OPERATOR_PASSWORD` ortam degiskeninden gelir; bos birakilirsa her calisma
+icin rastgele uretilir ve senaryo yanitinda (seed response) dondurulur. Repoda
+sabit bir demo sifresi tutulmaz. Bu operator hesaplari yazma yetkisine sahiptir;
+demoyu paylastigin salt-okunur `gozlemci` hesabiyla karistirma. Demoyu tanimadigin
+kisilere aciyorsan senaryoyu sunumdan sonra `Reset` ile temizle.
 
 ## Ucretsiz Plan Sinirlari
 
