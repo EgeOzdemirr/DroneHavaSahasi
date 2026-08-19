@@ -12,7 +12,7 @@ Security-first airspace control center MVP for a single base network. The curren
 
 ## Live Demo
 
-- Demo URL: `https://<render-service>.onrender.com/ui/login` (fill in after the first deploy)
+- **<https://hava-sahasi-demo.onrender.com/ui/login>**
 
 The demo is publicly reachable but not publicly usable: every `/ui/*`, `/v1/*` and
 `/v2/*` endpoint requires authentication, so visitors see only the login screen unless
