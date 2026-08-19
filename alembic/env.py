@@ -11,7 +11,9 @@ from app.db import models  # noqa: F401
 
 config = context.config
 settings = get_settings()
-config.set_main_option("sqlalchemy.url", settings.database_url)
+# Yonetilen Postgres saglayicilarinin urettigi parolalarda "%" bulunabilir;
+# configparser interpolasyonunu bozmamasi icin kacisla yazilir.
+config.set_main_option("sqlalchemy.url", settings.database_url.replace("%", "%%"))
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)

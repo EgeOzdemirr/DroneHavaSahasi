@@ -1,0 +1,63 @@
+# Render Blueprint: herkese acik tek URL'li demo dagitimi.
+# Adim adim kurulum: docs/PUBLIC_DEMO_DEPLOY.md
+#
+# Bu blueprint yalnizca API + UI servisini yayinlar. Bridge ve edge_agent
+# saha bilesenleridir; kamuya acik demoda calistirilmaz.
+# Redis kurulmaz: nonce store Redis yoksa bellege duser (app/services/nonce_store.py).
+
+databases:
+  - name: hava-sahasi-db
+    databaseName: hava_sahasi
+    user: hava_sahasi
+    plan: free
+    region: frankfurt
+
+services:
+  - type: web
+    name: hava-sahasi-demo
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./Dockerfile
+    dockerCommand: sh /app/deploy/render/start.sh
+    healthCheckPath: /ui/login
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: hava-sahasi-db
+          property: connectionString
+
+      - key: ENVIRONMENT
+        value: prod
+      - key: APP_NAME
+        value: Hava Sahasi Kontrol Merkezi
+      - key: SECURE_COOKIES
+        value: "true"
+
+      # Render rastgele uretir; repoda hicbir sir tutulmaz.
+      - key: JWT_SECRET_KEY
+        generateValue: true
+
+      # Fernet formati zorunlu oldugu icin Render uretemez -> panelden elle girilir.
+      # Uretmek icin: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+      - key: MASTER_KEY
+        sync: false
+
+      # Demo giris bilgileri. prod dogrulamasi sifre icin en az 12 karakter ister.
+      # README'ye YAZILMAZ; sadece paylasilacak kisilere verilir.
+      - key: BOOTSTRAP_ADMIN_USERNAME
+        sync: false
+      - key: BOOTSTRAP_ADMIN_PASSWORD
+        sync: false
+
+      # prod modunda "*" yasak. Ilk deploy sonrasi gercek URL farkliysa guncelle.
+      - key: CORS_ORIGINS
+        value: '["https://hava-sahasi-demo.onrender.com"]'
+
+      - key: DEMO_MODE_ENABLED
+        value: "true"
+      - key: OPENSKY_ENABLED
+        value: "true"
+      - key: MAP_PROVIDER
+        value: openfreemap

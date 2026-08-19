@@ -10,6 +10,19 @@ Security-first airspace control center MVP for a single base network. The curren
 - `redis`: nonce replay protection cache and bridge retry/DLQ backend
 - `edge_agent`: Jetson-friendly telemetry forwarder with local SQLite spool
 
+## Live Demo
+
+- Demo URL: `https://<render-service>.onrender.com/ui/login` (fill in after the first deploy)
+
+The demo is publicly reachable but not publicly usable: every `/ui/*`, `/v1/*` and
+`/v2/*` endpoint requires authentication, so visitors see only the login screen unless
+they were given credentials. Demo credentials are never stored in this repository.
+
+Free-tier note: the instance sleeps after 15 minutes of inactivity, so the first
+request can take up to ~50 seconds.
+
+Deploy your own instance from `render.yaml`: see `docs/PUBLIC_DEMO_DEPLOY.md`.
+
 ## Quick Start
 
 ### Windows quick launcher
