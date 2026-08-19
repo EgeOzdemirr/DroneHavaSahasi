@@ -16,7 +16,15 @@ Security-first airspace control center MVP for a single base network. The curren
 
 The demo is publicly reachable but not publicly usable: every `/ui/*`, `/v1/*` and
 `/v2/*` endpoint requires authentication, so visitors see only the login screen unless
-they were given credentials. Demo credentials are never stored in this repository.
+they were given credentials.
+
+Visitors sign in with a read-only `viewer` account provisioned from
+`BOOTSTRAP_VIEWER_USERNAME` / `BOOTSTRAP_VIEWER_PASSWORD`. That role opens the control
+center in read-only mode: the map, tracks, hostile detections, intercept tasks, alerts
+and audit trail are all visible, but every write endpoint rejects the role, so a visitor
+cannot delete a drone, reset the demo, edit field layers or take over the account. The
+account is re-synced from the environment on every startup, so it cannot be locked out.
+Admin credentials are for the operator of the deployment only.
 
 Free-tier note: the instance sleeps after 15 minutes of inactivity, so the first
 request can take up to ~50 seconds.

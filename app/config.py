@@ -31,6 +31,10 @@ class Settings(BaseSettings):
     bootstrap_admin_username: str = Field(default="admin", alias="BOOTSTRAP_ADMIN_USERNAME")
     bootstrap_admin_password: str = Field(default="admin123", alias="BOOTSTRAP_ADMIN_PASSWORD")
 
+    # Salt-okunur demo hesabi. Ikisi de doluysa acilista olusturulur.
+    bootstrap_viewer_username: str = Field(default="", alias="BOOTSTRAP_VIEWER_USERNAME")
+    bootstrap_viewer_password: str = Field(default="", alias="BOOTSTRAP_VIEWER_PASSWORD")
+
     telemetry_allowed_skew_seconds: int = Field(default=30, alias="TELEMETRY_ALLOWED_SKEW_SECONDS")
     nonce_ttl_seconds: int = Field(default=120, alias="NONCE_TTL_SECONDS")
     retention_days: int = Field(default=30, alias="RETENTION_DAYS")
@@ -96,6 +100,12 @@ class Settings(BaseSettings):
 
         if self.bootstrap_admin_password == "admin123" or len(self.bootstrap_admin_password) < 12:
             raise ValueError("BOOTSTRAP_ADMIN_PASSWORD is too weak for prod.")
+
+        if self.bootstrap_viewer_username.strip():
+            if len(self.bootstrap_viewer_password.strip()) < 12:
+                raise ValueError("BOOTSTRAP_VIEWER_PASSWORD is too weak for prod.")
+            if self.bootstrap_viewer_username.strip() == self.bootstrap_admin_username.strip():
+                raise ValueError("BOOTSTRAP_VIEWER_USERNAME cannot equal BOOTSTRAP_ADMIN_USERNAME.")
 
         if not self.secure_cookies:
             raise ValueError("SECURE_COOKIES must be true in prod.")

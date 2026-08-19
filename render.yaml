@@ -51,6 +51,14 @@ services:
       - key: BOOTSTRAP_ADMIN_PASSWORD
         sync: false
 
+      # Salt-okunur demo hesabi: linki paylastigin kisiler bununla girer.
+      # viewer rolu hicbir yazma ucuna erisemez ve kendi sifresini kalici
+      # olarak degistiremez; her acilista bu degerlere geri esitlenir.
+      - key: BOOTSTRAP_VIEWER_USERNAME
+        value: gozlemci
+      - key: BOOTSTRAP_VIEWER_PASSWORD
+        sync: false
+
       # prod modunda "*" yasak. Ilk deploy sonrasi gercek URL farkliysa guncelle.
       - key: CORS_ORIGINS
         value: '["https://hava-sahasi-demo.onrender.com"]'

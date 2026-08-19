@@ -28,7 +28,7 @@ from app.api.routers import (
 from app.config import get_settings
 from app.db.session import SessionLocal
 from app.services.background import background_maintenance
-from app.services.bootstrap import ensure_bootstrap_admin
+from app.services.bootstrap import ensure_bootstrap_admin, ensure_bootstrap_viewer
 
 settings = get_settings()
 
@@ -37,6 +37,7 @@ settings = get_settings()
 async def lifespan(_: FastAPI):
     with SessionLocal() as db:
         ensure_bootstrap_admin(db)
+        ensure_bootstrap_viewer(db)
 
     stop_event = asyncio.Event()
     task = asyncio.create_task(background_maintenance(stop_event))

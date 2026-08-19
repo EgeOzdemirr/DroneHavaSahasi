@@ -16,6 +16,32 @@ paylastigin kullanici adi/sifre ile girebilsin.
 
 Kod PostGIS'e ozgu hicbir tip/fonksiyon kullanmadigi icin duz PostgreSQL yeterlidir.
 
+## Paylasilan Hesap: Salt-Okunur Gozlemci
+
+Demo linkini verdigin kisiler **admin** ile degil, `viewer` rolundeki gozlemci
+hesabiyla girer. `BOOTSTRAP_VIEWER_USERNAME` + `BOOTSTRAP_VIEWER_PASSWORD` dolu
+oldugunda hesap acilista otomatik olusur (`app/services/bootstrap.py`).
+
+Bu hesapla giren kisi:
+
+- Kontrol merkezini salt-okunur modda gorur; harita, izler, hedef tespitleri,
+  gorevler, uyarilar ve denetim kayitlari acilir
+- Silme butonlari hic basilmaz, formlar ve demo paneli kapalidir
+  (`app/ui/static/js/control_center.js` icindeki `readonly` dali)
+- API'yi tarayicidan dogrudan cagirsa bile yazma uclarindan 403 alir; tum yazma
+  uclari `admin` veya `operator` rolu ister
+- Operator panelini acamaz, `/ui/control-center` adresine yonlendirilir
+
+Hesap her acilista ortam degiskenlerine geri esitlenir: rolu `viewer`a sabitlenir,
+sifresi yeniden yazilir ve `must_change_password` kapatilir. Yani paylasilan hesabi
+biri degistirmeye kalksa bile kilitlenmez. `BOOTSTRAP_VIEWER_USERNAME`,
+`BOOTSTRAP_ADMIN_USERNAME` ile ayni olamaz; `prod` dogrulamasi bunu reddeder.
+
+Admin hesabini paylasma. Admin rolu drone silebilir, HMAC paylasilan sirlarini
+duz metin gorebilir (`POST /v1/drones`, `POST /v1/drones/{id}/keys/rotate`),
+demoyu sifirlayabilir ve kendi sifresini degistirip seni kendi kurulumundan
+kilitleyebilir.
+
 ## Guvenlik Modeli
 
 - `/ui/*` ve `/v1/*`, `/v2/*` uclarinin tamami kimlik dogrulamasi ister.
@@ -51,6 +77,7 @@ Ciktiyi `MASTER_KEY` olarak sakla. Admin sifresi icin en az 12 karakterli,
    | `MASTER_KEY` | 1. adimda uretilen Fernet anahtari |
    | `BOOTSTRAP_ADMIN_USERNAME` | ornegin `komutan` (`admin` kullanma) |
    | `BOOTSTRAP_ADMIN_PASSWORD` | en az 12 karakterli guclu sifre |
+   | `BOOTSTRAP_VIEWER_PASSWORD` | paylasacagin salt-okunur demo sifresi (en az 12 karakter) |
 
 4. **Apply** de. Ilk imaj derlemesi yaklasik 5-10 dakika surer.
 
