@@ -13,10 +13,12 @@ Security-first airspace control center MVP for a single base network. The curren
 ## Live Demo
 
 - **<https://hava-sahasi-demo.onrender.com/ui/login>**
+- Read-only sign-in — username: `gozlemci`, password: `Gozlemci-Demo-2026`
 
 The demo is publicly reachable but not publicly usable: every `/ui/*`, `/v1/*` and
 `/v2/*` endpoint requires authentication, so visitors see only the login screen unless
-they were given credentials.
+they were given credentials. The credentials above are for the read-only viewer account
+only; admin credentials are never published.
 
 Visitors sign in with a read-only `viewer` account provisioned from
 `BOOTSTRAP_VIEWER_USERNAME` / `BOOTSTRAP_VIEWER_PASSWORD`. That role opens the control
