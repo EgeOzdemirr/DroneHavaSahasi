@@ -43,7 +43,9 @@ If Google Chrome is installed it is used first; otherwise the system default bro
 Prerequisites:
 
 - Docker Desktop is installed.
-- `.env` exists in the repository root. If needed, create it with `Copy-Item .env.example .env`.
+- A local `.env` file. It is intentionally **not** committed (it holds secrets and is
+  git-ignored); create it from the template with `Copy-Item .env.example .env`, then
+  fill in the empty secret slots. Only `.env.example` lives in the repository.
 
 1. Create local env file:
    - Windows PowerShell: `Copy-Item .env.example .env`

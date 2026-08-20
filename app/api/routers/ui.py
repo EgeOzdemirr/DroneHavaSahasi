@@ -20,6 +20,7 @@ from app.security.crypto import encrypt_secret
 from app.security.csrf import csrf_matches, new_csrf_token
 from app.services.audit import write_audit_log
 from app.services.drone_registry import delete_drone_from_registry
+from app.services.login_rate_limit import client_identifier, login_rate_limiter
 from app.services.passwords import apply_password_change, password_change_violation
 from app.ui.text import get_ui_text
 
@@ -300,8 +301,33 @@ def ui_login_submit(
         _set_csrf_cookie(response, csrf_new)
         return response
 
+    client_id = client_identifier(request)
+    if login_rate_limiter.is_blocked(client_id):
+        write_audit_log(
+            db,
+            actor_username=username,
+            action="ui_login_rate_limited",
+            entity_type="user",
+            entity_id=username,
+            details={},
+            success=False,
+        )
+        csrf_new = new_csrf_token()
+        response = templates.TemplateResponse(
+            request=request,
+            name="login.html",
+            context=_ui_context(
+                error="Çok fazla başarısız giriş denemesi. Lütfen bir süre sonra tekrar deneyin.",
+                csrf_token=csrf_new,
+            ),
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+        )
+        _set_csrf_cookie(response, csrf_new)
+        return response
+
     user = db.execute(select(User).where(User.username == username)).scalar_one_or_none()
     if not user or not verify_password(password, user.password_hash):
+        login_rate_limiter.register_failure(client_id)
         write_audit_log(
             db,
             actor_username=username,
@@ -332,6 +358,7 @@ def ui_login_submit(
         _set_csrf_cookie(response, csrf_new)
         return response
 
+    login_rate_limiter.reset(client_id)
     token = create_access_token(
         subject=user.username,
         role=user.role.value,

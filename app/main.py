@@ -48,7 +48,16 @@ async def lifespan(_: FastAPI):
         await task
 
 
-app = FastAPI(title=settings.app_name, lifespan=lifespan)
+# prod'da otomatik API dokumantasyonunu (Swagger/ReDoc/OpenAPI semasi) kapat:
+# kimlik dogrulamasiz erisilen bu uclar saldirgana hazir bir uc haritasi verir.
+_docs_enabled = settings.environment != "prod"
+app = FastAPI(
+    title=settings.app_name,
+    lifespan=lifespan,
+    docs_url="/docs" if _docs_enabled else None,
+    redoc_url="/redoc" if _docs_enabled else None,
+    openapi_url="/openapi.json" if _docs_enabled else None,
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -65,6 +74,9 @@ async def security_headers(request: Request, call_next):
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Referrer-Policy"] = "no-referrer"
+    # HTTPS zorunlu oldugunda (prod/secure cookies) tarayiciya HSTS bildir.
+    if settings.secure_cookies or settings.environment == "prod":
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     if request.url.path.startswith("/docs") or request.url.path.startswith("/redoc"):
         # FastAPI docs load Swagger/ReDoc assets from CDN and use inline bootstrap script.
         response.headers["Content-Security-Policy"] = (

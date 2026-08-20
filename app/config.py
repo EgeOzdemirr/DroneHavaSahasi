@@ -35,6 +35,12 @@ class Settings(BaseSettings):
     bootstrap_viewer_username: str = Field(default="", alias="BOOTSTRAP_VIEWER_USERNAME")
     bootstrap_viewer_password: str = Field(default="", alias="BOOTSTRAP_VIEWER_PASSWORD")
 
+    # Giris denemesi hiz siniri (brute-force korumasi). Bir istemci penceresi
+    # icinde en fazla login_max_attempts basarisiz denemeye izin verilir; asilirsa
+    # pencere dolana kadar 429 doner. Basarili giris sayaci sifirlar.
+    login_max_attempts: int = Field(default=10, alias="LOGIN_MAX_ATTEMPTS")
+    login_window_seconds: int = Field(default=300, alias="LOGIN_WINDOW_SECONDS")
+
     telemetry_allowed_skew_seconds: int = Field(default=30, alias="TELEMETRY_ALLOWED_SKEW_SECONDS")
     nonce_ttl_seconds: int = Field(default=120, alias="NONCE_TTL_SECONDS")
     retention_days: int = Field(default=30, alias="RETENTION_DAYS")

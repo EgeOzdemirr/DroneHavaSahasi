@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -8,15 +8,33 @@ from app.db.session import get_db
 from app.schemas.models import ChangePasswordRequest, ChangePasswordResponse, LoginRequest, TokenResponse
 from app.security.auth import create_access_token, verify_password
 from app.services.audit import write_audit_log
+from app.services.login_rate_limit import client_identifier, login_rate_limiter
 from app.services.passwords import apply_password_change, password_change_violation
 
 router = APIRouter(prefix="/v1/auth", tags=["auth"])
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(payload: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse:
+def login(payload: LoginRequest, request: Request, db: Session = Depends(get_db)) -> TokenResponse:
+    client_id = client_identifier(request)
+    if login_rate_limiter.is_blocked(client_id):
+        write_audit_log(
+            db,
+            actor_username=payload.username,
+            action="login_rate_limited",
+            entity_type="user",
+            entity_id=payload.username,
+            details={},
+            success=False,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Çok fazla başarısız giriş denemesi. Lütfen bir süre sonra tekrar deneyin.",
+        )
+
     user = db.execute(select(User).where(User.username == payload.username)).scalar_one_or_none()
     if not user or not verify_password(payload.password, user.password_hash):
+        login_rate_limiter.register_failure(client_id)
         write_audit_log(
             db,
             actor_username=payload.username,
@@ -40,6 +58,7 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse
         )
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User inactive")
 
+    login_rate_limiter.reset(client_id)
     token = create_access_token(
         subject=user.username,
         role=user.role.value,
