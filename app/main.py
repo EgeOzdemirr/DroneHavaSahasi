@@ -27,10 +27,13 @@ from app.api.routers import (
 )
 from app.config import get_settings
 from app.db.session import SessionLocal
+from app.services.activity import mark_activity
 from app.services.background import background_maintenance
 from app.services.bootstrap import ensure_bootstrap_admin, ensure_bootstrap_viewer
 
 settings = get_settings()
+
+HEALTHZ_PATH = "/healthz"
 
 
 @asynccontextmanager
@@ -66,6 +69,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def track_activity(request: Request, call_next):
+    # Uyanik tutma ping'i gercek kullanim sayilmaz (bkz. app/services/activity.py).
+    if request.url.path != HEALTHZ_PATH:
+        mark_activity()
+    return await call_next(request)
 
 
 @app.middleware("http")
@@ -106,6 +117,12 @@ async def security_headers(request: Request, call_next):
 @app.get("/", include_in_schema=False)
 def root() -> RedirectResponse:
     return RedirectResponse(url="/ui/login")
+
+
+@app.get(HEALTHZ_PATH, include_in_schema=False)
+def healthz() -> dict[str, str]:
+    # Kimliksiz ve DB'siz: PaaS health check'i ve uyanik tutma ping'i icin.
+    return {"status": "ok"}
 
 app.mount("/ui/static", StaticFiles(directory="app/ui/static"), name="ui-static")
 

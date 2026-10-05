@@ -4,13 +4,10 @@
 # Bu blueprint yalnizca API + UI servisini yayinlar. Bridge ve edge_agent
 # saha bilesenleridir; kamuya acik demoda calistirilmaz.
 # Redis kurulmaz: nonce store Redis yoksa bellege duser (app/services/nonce_store.py).
-
-databases:
-  - name: hava-sahasi-db
-    databaseName: hava_sahasi
-    user: hava_sahasi
-    plan: free
-    region: frankfurt
+#
+# Veritabani Render'da kurulmaz: Render'in ucretsiz Postgres'i 30 gun sonra silinir.
+# Bunun yerine suresiz ucretsiz Neon Postgres kullanilir; baglanti dizesi panelden
+# DATABASE_URL olarak girilir (docs/PUBLIC_DEMO_DEPLOY.md).
 
 services:
   - type: web
@@ -20,13 +17,18 @@ services:
     region: frankfurt
     dockerfilePath: ./Dockerfile
     dockerCommand: sh /app/deploy/render/start.sh
-    healthCheckPath: /ui/login
+    healthCheckPath: /healthz
     autoDeploy: true
     envVars:
+      # Neon baglanti dizesi (postgresql://...); start.sh surucu semasina cevirir.
       - key: DATABASE_URL
-        fromDatabase:
-          name: hava-sahasi-db
-          property: connectionString
+        sync: false
+
+      # 10 dk gercek istek yoksa arka plan dongusu DB'yi sorgulamayi birakir;
+      # /healthz uyanik tutma ping'i sayilmaz. Boylece Neon uyuyup ucretsiz
+      # kotanin icinde kalir, web servisi ise ping ile hep uyanik kalir.
+      - key: BACKGROUND_IDLE_AFTER_SECONDS
+        value: "600"
 
       - key: ENVIRONMENT
         value: prod

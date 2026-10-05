@@ -45,6 +45,10 @@ class Settings(BaseSettings):
     nonce_ttl_seconds: int = Field(default=120, alias="NONCE_TTL_SECONDS")
     retention_days: int = Field(default=30, alias="RETENTION_DAYS")
     link_lost_seconds: int = Field(default=10, alias="LINK_LOST_SECONDS")
+    # Bu kadar saniye gercek istek gelmezse arka plan bakim dongusu DB sorgulamayi
+    # birakir (sunucusuz Postgres uyuyabilsin diye). 0 = hic bosta kalma; sahada
+    # link-lost alarmlari kesintisiz calismali, bu yuzden varsayilan 0.
+    background_idle_after_seconds: int = Field(default=0, alias="BACKGROUND_IDLE_AFTER_SECONDS")
     recon_track_max_age_seconds: int = Field(default=30, alias="RECON_TRACK_MAX_AGE_SECONDS")
     demo_mode_enabled: bool = Field(default=True, alias="DEMO_MODE_ENABLED")
     demo_interceptor_speed_mps: float = Field(default=95.0, alias="DEMO_INTERCEPTOR_SPEED_MPS")

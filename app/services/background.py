@@ -6,6 +6,7 @@ from typing import Awaitable
 
 from app.config import get_settings
 from app.db.session import SessionLocal
+from app.services.activity import is_idle
 from app.services.alerts import raise_link_lost_alerts
 from app.services.retention import purge_old_telemetry
 
@@ -38,12 +39,14 @@ async def background_maintenance(stop_event: asyncio.Event) -> None:
     next_retention = datetime.now(timezone.utc).timestamp() + retention_every_seconds
 
     while not stop_event.is_set():
-        await _safe_call(_link_lost_tick)
+        # Bostayken DB'ye hic dokunma; ilk gercek istekte bakim kaldigi yerden devam eder.
+        if not is_idle(settings.background_idle_after_seconds):
+            await _safe_call(_link_lost_tick)
 
-        now_ts = datetime.now(timezone.utc).timestamp()
-        if now_ts >= next_retention:
-            await _safe_call(_retention_tick)
-            next_retention = now_ts + retention_every_seconds
+            now_ts = datetime.now(timezone.utc).timestamp()
+            if now_ts >= next_retention:
+                await _safe_call(_retention_tick)
+                next_retention = now_ts + retention_every_seconds
 
         try:
             await asyncio.wait_for(stop_event.wait(), timeout=link_lost_every_seconds)

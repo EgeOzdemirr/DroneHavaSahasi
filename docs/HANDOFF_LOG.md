@@ -166,3 +166,12 @@ Kural: Her oturum sonunda yeni kayit eklenir, eski kayitlar silinmez/degistirilm
 - Degisen dosyalar: `docs/PLAN.md`, `docs/STATUS.md`, `docs/FIELD_PILOT_RUNBOOK.md`, `README.md`, `.env.example`, `docs/HANDOFF_LOG.md`
 - Test sonucu: `python -m pytest -q` -> `76 passed`; statik dokuman kontrolu eski aktif endpoint/sayfa referanslari icin temiz (append-only handoff tarihi kayitlari haric).
 - Sonraki adim: Gercek Jetson + VPN/mTLS saha kosumunu yeni control-center/operator akisiyle kaydet; sonra sensor/AI contact adapter sozlesmesini uygulama planina al.
+
+## 2026-10-05 (UTC+3)
+
+- Branch/Commit: `render-neon-always-on` / commitlenmedi
+- Degisen dosyalar: `app/services/activity.py`, `app/services/background.py`, `app/main.py`, `app/config.py`, `tests/test_background_idle.py`, `render.yaml`, `.env.example`, `README.md`, `docs/PUBLIC_DEMO_DEPLOY.md`, `docs/STATUS.md`, `docs/HANDOFF_LOG.md`
+- Neden: canli demo linki Render ucretsiz Postgres'in 30 gunluk omru dolunca acilmaz oldu; servis uykusu da ilk ziyaretciyi ~50 sn bekletiyordu.
+- Test sonucu: `python -m pytest -q tests/test_background_idle.py` -> `4 passed`; tam regression `python -m pytest -q` -> `95 passed`.
+- Sonraki adim: Neon projesini ac, Render'da `DATABASE_URL` + health check yolunu guncelle, UptimeRobot ile `/healthz` ping'ini kur.
+

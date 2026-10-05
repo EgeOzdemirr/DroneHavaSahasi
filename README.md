@@ -28,8 +28,10 @@ cannot delete a drone, reset the demo, edit field layers or take over the accoun
 account is re-synced from the environment on every startup, so it cannot be locked out.
 Admin credentials are for the operator of the deployment only.
 
-Free-tier note: the instance sleeps after 15 minutes of inactivity, so the first
-request can take up to ~50 seconds.
+Hosting: Render free web service + Neon free Postgres, both without an expiry date.
+An uptime monitor pings `/healthz` so the instance does not sleep; the ping never
+touches the database, and background maintenance pauses after 10 minutes without
+real traffic so the serverless database can sleep too.
 
 Deploy your own instance from `render.yaml`: see `docs/PUBLIC_DEMO_DEPLOY.md`.
 
@@ -53,16 +55,14 @@ Prerequisites:
    - Windows PowerShell: `Copy-Item .env.example .env`
    - Linux/macOS: `cp .env.example .env`
 2. Start stack:
-   - `docker compose up --build`  1"  1
+   - `docker compose up --build`
 3. API/UI:
    - API docs: `http://localhost:8000/docs`
    - UI login: `http://localhost:8000/ui/login`
    - Control center: `http://localhost:8000/ui/control-center`
-
-   
    - Operator panel: `http://localhost:8000/ui/operator`
    - Drone registry: `http://localhost:8000/ui/drones`
-   - Bridge docs: `http://localhost:8 q2 mkö00/docs`
+   - Bridge docs: `http://localhost:8100/docs`
 4. Bootstrap admin from `.env`:
    - username: `BOOTSTRAP_ADMIN_USERNAME`
    - password: `BOOTSTRAP_ADMIN_PASSWORD`
@@ -307,6 +307,7 @@ Management endpoints for edge device lifecycle:
 ## Ops Notes
 
 - Link-lost monitor runs every 5 seconds (`LINK_LOST_SECONDS` threshold).
+- `BACKGROUND_IDLE_AFTER_SECONDS` (default `0` = off) pauses that monitor and the retention purge after N seconds without real HTTP traffic; `GET /healthz` does not count as traffic. Keep it `0` in the field.
 - Telemetry retention purge runs hourly (`RETENTION_DAYS` cutoff).
 - Critical admin and task actions are recorded in `audit_log`.
 - Playback is available through `GET /v1/tracks/{drone_uid}/playback?minutes=60`.

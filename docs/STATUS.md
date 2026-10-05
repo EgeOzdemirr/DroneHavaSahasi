@@ -1,6 +1,6 @@
 # Proje Durum Takibi
 
-Son guncelleme: 2026-05-05 00:00 (UTC+3)
+Son guncelleme: 2026-10-05 (UTC+3)
 Kaynak oturum notu: Dokumanlar mevcut control-center / operator / recon contact / intercept task refactor kod yuzeyine gore guncellendi.
 
 ## Yapildi
@@ -21,6 +21,7 @@ Kaynak oturum notu: Dokumanlar mevcut control-center / operator / recon contact 
 - [P1][owner: ops] Secret rotation, preflight, VPN/mTLS runbook ve E2E smoke script paketi mevcut.
 - [P2][owner: platform] CI quality gates mevcut: pytest ve secret rotation script check workflow'u.
 - [P2][owner: integrations] OpenSky sivil hava trafigi overlay endpointi ve servis testleri mevcut.
+- [P2][owner: platform] Herkese acik demo suresiz ucretsiz yapiya alindi: Render web + Neon Postgres, `/healthz` uyanik tutma ucu ve bostayken DB'ye dokunmayan arka plan dongusu (`BACKGROUND_IDLE_AFTER_SECONDS`).
 
 ## Mevcut Mimari Notu
 

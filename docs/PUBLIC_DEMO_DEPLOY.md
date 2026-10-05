@@ -9,7 +9,7 @@ paylastigin kullanici adi/sifre ile girebilsin.
 | Bilesen | Durum | Neden |
 | --- | --- | --- |
 | `api` (FastAPI + `/ui/*`) | Yayinlanir | Demonun tamami bu servistedir |
-| `postgres` | Yayinlanir (Render free) | Kalici veri |
+| `postgres` | Neon (free, suresiz) | Kalici veri; Render'in ucretsiz Postgres'i 30 gunde silinir |
 | `redis` | Yayinlanmaz | Nonce store Redis yoksa bellege duser (`app/services/nonce_store.py`) |
 | `bridge` | Yayinlanmaz | Saha telemetrisi icindir, demoda gereksiz |
 | `edge_agent` | Yayinlanmaz | Jetson uzerinde calisan saha bileseni |
@@ -45,8 +45,8 @@ kilitleyebilir.
 ## Guvenlik Modeli
 
 - `/ui/*` ve `/v1/*`, `/v2/*` uclarinin tamami kimlik dogrulamasi ister.
-  Kimliksiz erisilebilen tek uclar: `GET/POST /ui/login`, `POST /v1/auth/login`
-  ve HMAC imzali `POST /v1/telemetry/ingest`.
+  Kimliksiz erisilebilen tek uclar: `GET/POST /ui/login`, `POST /v1/auth/login`,
+  HMAC imzali `POST /v1/telemetry/ingest` ve veri dondurmeyen `GET /healthz`.
 - `ENVIRONMENT=prod` dogrulamasi zayif yapilandirmayi engeller: JWT anahtari en az
   32 karakter, `MASTER_KEY` gecerli Fernet anahtari, admin sifresi en az 12 karakter,
   `SECURE_COOKIES=true`, `CORS_ORIGINS` icinde `*` yasak (`app/config.py`).
@@ -66,7 +66,15 @@ python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().d
 Ciktiyi `MASTER_KEY` olarak sakla. Admin sifresi icin en az 12 karakterli,
 `.env.example` icindekilerden farkli bir deger belirle.
 
-### 2. Blueprint'i olustur
+### 2. Neon veritabanini olustur
+
+1. <https://neon.tech> -> ucretsiz hesap -> **New Project** (bolge: Frankfurt / `eu-central-1`).
+2. **Connect** -> baglanti dizesini kopyala (`postgresql://...?sslmode=require...`).
+   "Connection pooling" kapali (dogrudan baglanti) olsun; migrasyonlar icin daha sorunsuzdur.
+3. Bu degeri sonraki adimda `DATABASE_URL` olarak gireceksin. Sema ilk acilista
+   `alembic upgrade head` ile otomatik kurulur.
+
+### 3. Blueprint'i olustur
 
 1. <https://dashboard.render.com/blueprints> -> **New Blueprint Instance**
 2. `EgeOzdemirr/DroneHavaSahasi` reposunu sec (Render'a GitHub erisimi ver).
@@ -74,6 +82,7 @@ Ciktiyi `MASTER_KEY` olarak sakla. Admin sifresi icin en az 12 karakterli,
 
    | Degisken | Deger |
    | --- | --- |
+   | `DATABASE_URL` | 2. adimdaki Neon baglanti dizesi |
    | `MASTER_KEY` | 1. adimda uretilen Fernet anahtari |
    | `BOOTSTRAP_ADMIN_USERNAME` | ornegin `komutan` (`admin` kullanma) |
    | `BOOTSTRAP_ADMIN_PASSWORD` | en az 12 karakterli guclu sifre |
@@ -83,7 +92,7 @@ Ciktiyi `MASTER_KEY` olarak sakla. Admin sifresi icin en az 12 karakterli,
 
 `JWT_SECRET_KEY` Render tarafindan rastgele uretilir, elle girilmez.
 
-### 3. URL'i dogrula
+### 4. URL'i dogrula
 
 Deploy bitince servisin gercek adresini kontrol et. `hava-sahasi-demo` adi baska bir
 hesapta kullanildiysa Render sonuna ek getirir. Adres farkliysa servis ->
@@ -95,7 +104,7 @@ hesapta kullanildiysa Render sonuna ek getirir. Adres farkliysa servis ->
 
 Bu adim atlanirsa uygulama `prod` dogrulamasi yuzunden acilmaz.
 
-### 4. Ilk giris
+### 5. Ilk giris
 
 Hem admin hem gozlemci hesabi acilista ortam degiskenlerine gore olusturulur ve
 her yeniden baslatmada bu degerlere geri esitlenir (`app/services/bootstrap.py`).
@@ -114,7 +123,26 @@ esitlenir, eski sifre gecersiz olur. Veritabanina elle mudahale gerekmez.
 > degisikligi kalici olmaz, sonraki yeniden baslatmada ortam degerine doner. Kalici
 > kimlik yonetimi gereken gercek bir kurulumda bu davranisi degistir.
 
-### 5. Demo senaryosu
+### 6. Servisi uyanik tut
+
+Render'in ucretsiz web servisi 15 dakika istek almazsa uyur ve ilk ziyaretci ~50 saniye
+bekler. Bunu onlemek icin ucretsiz bir izleme servisi (UptimeRobot, cron-job.org)
+**10 dakikada bir** su adrese `GET` istegi atsin:
+
+```
+https://<adres>/healthz
+```
+
+- `/healthz` veritabanina dokunmaz ve kimlik istemez; `{"status":"ok"}` doner.
+- Bu ping "gercek kullanim" sayilmaz. `BACKGROUND_IDLE_AFTER_SECONDS=600` sayesinde
+  10 dakika gercek istek gelmezse arka plan dongusu DB'yi sorgulamayi birakir
+  (`app/services/activity.py`). Boylece Neon uyur ve ucretsiz islem kotasini
+  bitirmez; web servisi ise hep uyanik kalir.
+- Tek servis surekli acik kalsa bile ayda en fazla 744 saat harcar; Render'in
+  ucretsiz kotasi 750 saattir. Ayni Render hesabinda baska ucretsiz servis
+  calistirirsan bu kota paylasilir.
+
+### 7. Demo senaryosu
 
 Kontrol merkezindeki `Sunum Akisi` paneli ile: reset -> senaryo yukle -> hedef
 olustur -> operator panelinden gorevi kabul et. Ayrintilar README'deki
@@ -130,12 +158,12 @@ kisilere aciyorsan senaryoyu sunumdan sonra `Reset` ile temizle.
 ## Ucretsiz Plan Sinirlari
 
 - **Uyku modu:** servis 15 dakika istek almazsa uyur; sonraki ilk istek 50 saniyeye
-  kadar surebilir. Sunumdan birkac dakika once linki bir kez ac.
-- **Veritabani omru:** Render'in ucretsiz PostgreSQL ornekleri olusturuldiktan 30 gun
-  sonra silinir. Kalici demo icin ucretsiz ve suresiz bir Postgres (ornegin Neon)
-  baglanti dizesini `DATABASE_URL` olarak elle gir ve `render.yaml` icindeki
-  `databases:` blogunu kaldir. Baslatma betigi `postgres://` / `postgresql://`
-  semalarini otomatik cevirir, ek duzenleme gerekmez.
+  kadar surebilir. 6. adimdaki `/healthz` ping'i bunu onler.
+- **Veritabani:** Render'in ucretsiz PostgreSQL ornekleri olusturulduktan 30 gun
+  sonra silinir; bu yuzden blueprint Render veritabani kurmaz, Neon kullanir.
+  Neon ucretsiz plani suresizdir (proje basina 0.5 GB depolama, ayda 100 CU-saat
+  islem); kullanilmayinca 5 dakikada uyur ve ilk sorguda uyanir. Baslatma betigi
+  `postgres://` / `postgresql://` semalarini otomatik cevirir.
 - **Bellek:** ucretsiz orneklerde 512 MB. Tek uvicorn worker'i yeterlidir.
 - **Dis servisler:** harita karolari (OpenFreeMap/unpkg) ve OpenSky ucusları
   ziyaretcinin tarayicisindan/sunucudan cekilir; bu servisler kapali oldugunda
